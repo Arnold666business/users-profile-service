@@ -1,0 +1,1 @@
+CREATE SCHEME IF NOT EXISTS users_profile;
