@@ -8,17 +8,17 @@ import (
 	"users-profile-service/internal/repository"
 )
 
-type DataForProcessing struct {
+type BlockRequest struct {
 	UserId      int64
 	BlockTypeId int
 	ForeverFlag bool
 }
 
-// todo: добавить транзакции
-func (processor *BlockUserProcessor) Process(data DataForProcessing) error {
+// todo: добавить транзакции ну или ненадо
+func (processor *BlockUserProcessor) Process(data BlockRequest) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	l := processor.logger.Named("blocking.processing")
+	l := processor.logger.Named("block.user.processing")
 
 	userId := data.UserId
 	user, err := processor.userRepository.GetById(ctx, userId)
