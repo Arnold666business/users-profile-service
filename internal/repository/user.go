@@ -28,6 +28,7 @@ const (
 	Id Field = iota
 	Email
 	Login
+	ACCESS_EMAIL_STATUS
 )
 
 func (user *User) getBy(ctx context.Context, field Field, value interface{}) (*models.User, error) {
@@ -66,7 +67,7 @@ func (user *User) getBy(ctx context.Context, field Field, value interface{}) (*m
 }
 
 func (user *User) GetById(ctx context.Context, id int64) (*models.User, error) {
-	return user.getBy(ctx, Field(id), id)
+	return user.getBy(ctx, Id, id)
 }
 
 func (user *User) GetByEmail(ctx context.Context, email string) (*models.User, error) {
@@ -94,4 +95,74 @@ func (user *User) Save(ctx context.Context, userToCreate *models.User) (int64, e
 		return 0, err
 	}
 	return userToCreate.Id, nil
+}
+
+func (user *User) updateField(ctx context.Context, id int64, setField Field, setValue interface{}) error {
+	if setField == Id {
+		return fmt.Errorf("cannot update id field")
+	}
+
+	var setFieldName string
+
+	switch setField {
+	case Email:
+		setFieldName = "email"
+	case Login:
+		setFieldName = "login"
+	case ACCESS_EMAIL_STATUS:
+		setFieldName = "access_email_status"
+	default:
+		return fmt.Errorf("unknown set field %v", setField)
+	}
+
+	query := fmt.Sprintf(
+		"UPDATE users_profile.users SET %s = $1, updated_at = NOW() WHERE id = $2",
+		setFieldName,
+	)
+
+	_, err := user.db.Exec(ctx, query, setValue, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (user *User) UpdateEmail(ctx context.Context, id int64, newEmail string) error {
+	return user.updateField(ctx, id, Email, newEmail)
+}
+
+func (user *User) UpdateLogin(ctx context.Context, id int64, newLogin string) error {
+	return user.updateField(ctx, id, Login, newLogin)
+}
+
+func (user *User) UpdateAccessEmailStatus(ctx context.Context, id int64, newStatus string) error {
+	return user.updateField(ctx, id, ACCESS_EMAIL_STATUS, newStatus)
+}
+
+func (user *User) Update(ctx context.Context, u *models.User) error {
+	query := `
+		UPDATE users_profile.users  SET 
+		                                login=$1, 
+		                                email=$2, 
+		                                access_email_status=$3 
+		                                role=$4 
+		                            is_deleted=$5 
+		                            deleted_at=$6 
+		                            WHERE id=$7;
+	`
+
+	_, err := user.db.Exec(ctx, query,
+		u.Login,
+		u.Email,
+		u.AccessEmailStatus,
+		u.Role,
+		u.IsDeleted,
+		u.DeletedAt,
+		u.Id,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update users for id=%d: %w", u.Id, err)
+	}
+	return nil
 }

@@ -5,13 +5,11 @@ import (
 	"users-profile-service/internal/external/kafka/producer/DeletedUser"
 	"users-profile-service/internal/repository"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
 type DeleteUserProcessor struct {
 	logger             *zap.SugaredLogger
-	db                 *pgxpool.Pool
 	userRepository     *repository.User
 	ubsRepository      *repository.UserBlockStatus
 	btdRepository      *repository.BlockTypeDictionary
@@ -22,7 +20,6 @@ type DeleteUserProcessor struct {
 }
 
 func Build(logger *zap.SugaredLogger,
-	db *pgxpool.Pool,
 	userRepository *repository.User,
 	ubsRepository *repository.UserBlockStatus,
 	btdRepository *repository.BlockTypeDictionary,
@@ -32,7 +29,6 @@ func Build(logger *zap.SugaredLogger,
 	auditProducer *Audit.Producer) (*DeleteUserProcessor, error) {
 	return &DeleteUserProcessor{
 		logger:             logger,
-		db:                 db,
 		userRepository:     userRepository,
 		ubsRepository:      ubsRepository,
 		btdRepository:      btdRepository,

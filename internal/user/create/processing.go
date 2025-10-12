@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 	"users-profile-service/internal/external/kafka/producer/NewUser"
 	"users-profile-service/internal/models"
 	"users-profile-service/internal/user"
@@ -19,9 +18,7 @@ type CreateRequest struct {
 }
 
 // todo:транзакции
-func (processor *CreateUserProcessor) Process(req CreateRequest) (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateRequest) (int64, error) {
 	l := processor.logger.Named("create.user.processing")
 
 	val, err := processor.redis.GetIdempotencyStorage(ctx, req.IdempotencyKey)
@@ -77,7 +74,7 @@ func (processor *CreateUserProcessor) Process(req CreateRequest) (int64, error) 
 		l.Debugf("Error creating user: %s", err)
 	}
 
-	_, err = processor.uhRepository.Save(ctx, newUser, models.BLOCKED)
+	_, err = processor.uhRepository.Save(ctx, newUser, models.CREATE)
 	if err != nil {
 		l.Errorw("error adding user_history", "userId", userId, "err", err)
 		return 0, err

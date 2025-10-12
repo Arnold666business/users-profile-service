@@ -3,7 +3,6 @@ package block
 import (
 	"context"
 	"errors"
-	"time"
 	"users-profile-service/internal/models"
 	"users-profile-service/internal/repository"
 )
@@ -15,9 +14,7 @@ type BlockRequest struct {
 }
 
 // todo: добавить транзакции ну или ненадо
-func (processor *BlockUserProcessor) Process(data BlockRequest) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequest) error {
 	l := processor.logger.Named("block.user.processing")
 
 	userId := data.UserId
