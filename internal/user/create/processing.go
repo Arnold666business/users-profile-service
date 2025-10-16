@@ -2,7 +2,6 @@ package create
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"users-profile-service/internal/external/kafka/producer/NewUser"
@@ -17,7 +16,6 @@ type CreateRequest struct {
 	IdempotencyKey string `json:"idempotency_key"`
 }
 
-// todo:транзакции
 func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateRequest) (int64, error) {
 	l := processor.logger.Named("create.user.processing")
 
@@ -43,7 +41,6 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 		l.Debugf("User login is invalid: %s", validateErr)
 		return 0, fmt.Errorf(validateErr)
 	}
-
 	newUser := &models.User{
 		Login:             req.Login,
 		Email:             req.Email,
@@ -51,34 +48,35 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 		Role:              req.Role,
 		IsDeleted:         false,
 	}
-	userId, err := processor.userRepository.Save(ctx, newUser)
-	if err != nil {
-		l.Debugf("Error creating user: %s", err)
-		return 0, err
-	}
-	newUser.Id = userId // на всякий
+	errTx := processor.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
 
-	jsonData, err := json.Marshal(newUser)
-	if err != nil {
-		l.Errorf("failed to marshal user with id %d: %s", userId, err)
+		userId, err := processor.userRepository.Save(ctx, newUser)
+		if err != nil {
+			l.Debugf("Error creating user: %s", err)
+			return err
+		}
+
+		_, err = processor.uhRepository.Save(ctx, newUser, models.CREATE)
+		if err != nil {
+			l.Errorw("error adding user_history", "userId", userId, "err", err)
+			return err
+		}
+		return nil
+	})
+	if errTx != nil {
 		return 0, err
 	}
-	errI := processor.redis.SetIdempotencyStorage(ctx, req.IdempotencyKey, string(jsonData))
+
+	errI := processor.redis.SetIdempotencyStorage(ctx, req.IdempotencyKey, strconv.FormatInt(newUser.Id, 10))
 	if errI != nil {
 		l.Errorf("error with save to idempotency storage %s: %s", req.IdempotencyKey, errI)
 	}
 
 	//todo: вот эти хуйни все сделать нормально
-	err = processor.newUserProducer.Produce(NewUser.NewUserTopicData{Id: userId, Role: req.Role})
-	if err != nil {
-		l.Debugf("Error creating user: %s", err)
+	errProducer := processor.newUserProducer.Produce(NewUser.NewUserTopicData{Id: newUser.Id, Role: req.Role})
+	if errProducer != nil {
+		l.Debugf("Error creating user: %s", errProducer)
 	}
 
-	_, err = processor.uhRepository.Save(ctx, newUser, models.CREATE)
-	if err != nil {
-		l.Errorw("error adding user_history", "userId", userId, "err", err)
-		return 0, err
-	}
-
-	return userId, nil
+	return newUser.Id, nil
 }

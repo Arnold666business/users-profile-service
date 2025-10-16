@@ -2,9 +2,7 @@ package block
 
 import (
 	"context"
-	"errors"
 	"users-profile-service/internal/models"
-	"users-profile-service/internal/repository"
 )
 
 type BlockRequest struct {
@@ -13,7 +11,6 @@ type BlockRequest struct {
 	ForeverFlag bool
 }
 
-// todo: добавить транзакции ну или ненадо
 func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequest) error {
 	l := processor.logger.Named("block.user.processing")
 
@@ -33,33 +30,22 @@ func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequ
 		UserId:      userId,
 		BlockTypeId: btd.BlockType,
 		ForeverFlag: data.ForeverFlag,
+		IsActive:    true,
 	}
 	ubs.SetUnblockDate(btd.Hour)
-	currentUbs, err := processor.ubsRepository.GetByUserId(ctx, userId)
-	if err != nil {
-		if errors.Is(err, repository.NotFoundUserBlockStatusError) {
-			_, err := processor.ubsRepository.Save(ctx, ubs)
-			if err != nil {
-				l.Errorw("error adding block", "userId", userId, "err", err)
-				return err
-			}
-		} else {
-			l.Warnw("error getting block", "userId", userId, "err", err)
-			return err
-		}
-	} else {
-		ubs.Id = currentUbs.Id
-		err = processor.ubsRepository.Update(ctx, ubs)
-		if err != nil {
-			l.Errorw("error updating block", "userId", userId, "err", err)
-			return err
-		}
-	}
 
-	_, err = processor.uhRepository.Save(ctx, user, models.BLOCKED)
-	if err != nil {
-		l.Errorw("error adding user_history", "userId", userId, "err", err)
-		return err
-	}
-	return nil
+	return processor.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		err = processor.ubsRepository.UpsertByUserId(ctx, ubs)
+		if err != nil {
+			l.Errorf("error upserting block_type_dictionary: %v", err)
+			return err
+		}
+
+		_, err = processor.uhRepository.Save(ctx, user, models.BLOCKED)
+		if err != nil {
+			l.Errorw("error adding user_history", "userId", userId, "err", err)
+			return err
+		}
+		return nil
+	})
 }

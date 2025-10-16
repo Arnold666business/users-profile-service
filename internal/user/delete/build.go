@@ -17,6 +17,7 @@ type DeleteUserProcessor struct {
 	kitchenService     KitchenService
 	deleteUserProducer *DeletedUser.Producer
 	auditProducer      *Audit.Producer
+	transactor         *repository.Transactor
 }
 
 func Build(logger *zap.SugaredLogger,
@@ -26,7 +27,8 @@ func Build(logger *zap.SugaredLogger,
 	uhRepository *repository.UserHistory,
 	kitchenService KitchenService,
 	deleteUserProducer *DeletedUser.Producer,
-	auditProducer *Audit.Producer) (*DeleteUserProcessor, error) {
+	auditProducer *Audit.Producer,
+	transactor *repository.Transactor) (*DeleteUserProcessor, error) {
 	return &DeleteUserProcessor{
 		logger:             logger,
 		userRepository:     userRepository,
@@ -36,5 +38,6 @@ func Build(logger *zap.SugaredLogger,
 		kitchenService:     kitchenService,
 		deleteUserProducer: deleteUserProducer,
 		auditProducer:      auditProducer,
+		transactor:         transactor,
 	}, nil
 }

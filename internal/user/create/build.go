@@ -14,6 +14,7 @@ type CreateUserProcessor struct {
 	userRepository  *repository.User
 	newUserProducer *NewUser.Producer
 	redis           *redis.RedisProvider
+	transactor      *repository.Transactor
 }
 
 func Build(
@@ -22,6 +23,7 @@ func Build(
 	userRepository *repository.User,
 	newUserProducer *NewUser.Producer,
 	redis *redis.RedisProvider,
+	transactor *repository.Transactor,
 ) (*CreateUserProcessor, error) {
 	return &CreateUserProcessor{
 		logger:          logger,
@@ -29,5 +31,6 @@ func Build(
 		userRepository:  userRepository,
 		newUserProducer: newUserProducer,
 		redis:           redis,
+		transactor:      transactor,
 	}, nil
 }

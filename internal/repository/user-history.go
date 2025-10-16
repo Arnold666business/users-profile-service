@@ -18,6 +18,7 @@ func NewUserHistory(db *pgxpool.Pool) *UserHistory {
 }
 
 func (user *UserHistory) Save(ctx context.Context, u *models.User, action models.ACTION) (int64, error) {
+	db := GetQuerier(ctx, user.db)
 	userHistory := models.UserHistory{
 		UserId:   u.Id,
 		Action:   action,
@@ -38,7 +39,7 @@ func (user *UserHistory) Save(ctx context.Context, u *models.User, action models
 		VALUES ($1, $2, $3, $4, $5, &6)
 		RETURNING id
 	`
-	err := user.db.QueryRow(ctx, query,
+	err := db.QueryRow(ctx, query,
 		userHistory.UserId, userHistory.Action.String(), userHistory.CreateAt, userHistory.Email, userHistory.Login, oldFields,
 	).Scan(userHistory.Id)
 	if err != nil {

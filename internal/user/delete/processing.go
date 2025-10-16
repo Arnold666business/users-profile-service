@@ -15,7 +15,6 @@ type KitchenService interface {
 	UnPublishKitchenByOwerId(ctx context.Context, id int64)
 }
 
-// todo: добавить транзакции ну или ненадо
 func (processor *DeleteUserProcessor) process(ctx context.Context, id int64) (int64, error) {
 	l := processor.logger.Named("deleted.user.processing")
 
@@ -34,8 +33,25 @@ func (processor *DeleteUserProcessor) process(ctx context.Context, id int64) (in
 	//todo: вот эти хуйни все сделать нормально
 	go processor.kitchenService.UnPublishKitchenByOwerId(ctx, user.Id)
 
-	user.IsDeleted = true
-	user.DeletedAt = time.Now()
+	err = processor.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		user.IsDeleted = true
+		user.DeletedAt = time.Now()
+		err = processor.userRepository.Update(ctx, user)
+		if err != nil {
+			l.Errorw("error updating user", "user", user)
+			return err
+		}
+
+		_, err = processor.uhRepository.Save(ctx, user, models.DELETE)
+		if err != nil {
+			l.Errorw("error adding user_history", "userId", id, "err", err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
 
 	//todo: вот эти хуйни все сделать нормально
 	//processor.auditProducer.Produce()
@@ -46,10 +62,5 @@ func (processor *DeleteUserProcessor) process(ctx context.Context, id int64) (in
 		return 0, err
 	}
 
-	_, err = processor.uhRepository.Save(ctx, user, models.DELETE)
-	if err != nil {
-		l.Errorw("error adding user_history", "userId", id, "err", err)
-		return 0, err
-	}
 	return id, nil
 }

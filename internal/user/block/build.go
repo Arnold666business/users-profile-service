@@ -12,18 +12,21 @@ type BlockUserProcessor struct {
 	ubsRepository  *repository.UserBlockStatus
 	btdRepository  *repository.BlockTypeDictionary
 	uhRepository   *repository.UserHistory
+	transactor     *repository.Transactor
 }
 
 func Build(logger *zap.SugaredLogger,
 	userRepository *repository.User,
 	ubsRepository *repository.UserBlockStatus,
 	btdRepository *repository.BlockTypeDictionary,
-	uhRepository *repository.UserHistory) (*BlockUserProcessor, error) {
+	uhRepository *repository.UserHistory,
+	transactor *repository.Transactor) (*BlockUserProcessor, error) {
 	return &BlockUserProcessor{
 		logger:         logger,
 		userRepository: userRepository,
 		ubsRepository:  ubsRepository,
 		btdRepository:  btdRepository,
 		uhRepository:   uhRepository,
+		transactor:     transactor,
 	}, nil
 }

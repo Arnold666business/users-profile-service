@@ -13,6 +13,7 @@ var (
 	wrongLoginSymbols = "%$#*"
 )
 
+// todo: вот тут корчое моча короче типо с этим ну типо он даже при апдейте мотрит типо пизжа пидорасы или че там а я жа яне понимаю
 // "" если валиден
 func ValidateEmail(ctx context.Context, email string, userRepository *repository.User) string {
 	if strings.TrimSpace(email) == "" {

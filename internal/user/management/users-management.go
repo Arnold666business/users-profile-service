@@ -10,8 +10,6 @@ import (
 	"users-profile-service/internal/user"
 )
 
-//todo: транзакции
-
 func (um *UserManager) EditEmail(ctx context.Context, userId int64, email string) error {
 	u, err := um.userRepository.GetById(ctx, userId)
 	if err != nil {
@@ -22,9 +20,22 @@ func (um *UserManager) EditEmail(ctx context.Context, userId int64, email string
 		return fmt.Errorf(res)
 	}
 
-	u.Email = email
-	u.AccessEmailStatus = false
-	err = um.userRepository.Update(ctx, u)
+	err = um.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		u.Email = email
+		u.AccessEmailStatus = false
+		err = um.userRepository.Update(ctx, u)
+		if err != nil {
+			um.logger.Errorf("error updating user: %v", err)
+			return err
+		}
+
+		_, err = um.uhRepository.Save(ctx, u, models.UPDATE)
+		if err != nil {
+			um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -35,12 +46,6 @@ func (um *UserManager) EditEmail(ctx context.Context, userId int64, email string
 	}
 	if errR := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(res)); errR != nil {
 		um.logger.Error("error set user with id %d to cache after change email", userId)
-	}
-
-	_, err = um.uhRepository.Save(ctx, u, models.UPDATE)
-	if err != nil {
-		um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
-		return err
 	}
 	return nil
 }
@@ -55,8 +60,21 @@ func (um *UserManager) ConfirmEmail(ctx context.Context, userId int64) error {
 		return errors.New("no user email found")
 	}
 
-	u.AccessEmailStatus = true
-	err = um.userRepository.UpdateAccessEmailStatus(ctx, userId, "true")
+	err = um.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		u.AccessEmailStatus = true
+		err = um.userRepository.UpdateAccessEmailStatus(ctx, userId, "true")
+		if err != nil {
+			um.logger.Errorf("error updating user: %v", err)
+			return err
+		}
+
+		_, err = um.uhRepository.Save(ctx, u, models.UPDATE)
+		if err != nil {
+			um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -69,11 +87,6 @@ func (um *UserManager) ConfirmEmail(ctx context.Context, userId int64) error {
 		um.logger.Error("error set user with id %d to cache after change access email status", userId)
 	}
 
-	_, err = um.uhRepository.Save(ctx, u, models.UPDATE)
-	if err != nil {
-		um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
-		return err
-	}
 	return nil
 }
 
@@ -87,8 +100,21 @@ func (um *UserManager) EditLogin(ctx context.Context, userId int64, login string
 		return fmt.Errorf(res)
 	}
 
-	u.Login = login
-	err = um.userRepository.UpdateLogin(ctx, userId, login)
+	err = um.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		u.Login = login
+		err = um.userRepository.UpdateLogin(ctx, userId, login)
+		if err != nil {
+			um.logger.Errorf("error updating user: %v", err)
+			return err
+		}
+
+		_, err = um.uhRepository.Save(ctx, u, models.UPDATE)
+		if err != nil {
+			um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -101,22 +127,17 @@ func (um *UserManager) EditLogin(ctx context.Context, userId int64, login string
 		um.logger.Error("error set user with id %d to cache after change login", userId)
 	}
 
-	_, err = um.uhRepository.Save(ctx, u, models.UPDATE)
-	if err != nil {
-		um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
-		return err
-	}
 	return nil
 }
 
-func (um *UserManager) GetUser(ctx context.Context, userId int64) (*models.User, error) {
+func (um *UserManager) GetUser(ctx context.Context, userId int64) (*models.UserAggregate, error) {
 	val, err := um.redis.GetUsersCache(ctx, strconv.FormatInt(userId, 10))
 	if err != nil {
 		um.logger.Errorf("error getting user with id %d from cache", userId)
 	}
 
 	if val != "" {
-		var u models.User
+		var u models.UserAggregate
 		err = json.Unmarshal([]byte(val), &u)
 		if err != nil {
 			um.logger.Errorf("error unmarshalling user with id %d from cache", userId)
@@ -125,5 +146,16 @@ func (um *UserManager) GetUser(ctx context.Context, userId int64) (*models.User,
 		}
 	}
 
-	//todo: когда приду: 1) вынести повторяющуюся мочу от сюда. 2) дописать GetUser 3) с трнанзакциями разобраться
+	userAggregate, errA := um.userRepository.GetUserAggregate(ctx, userId)
+	if errA != nil {
+		return nil, errA
+	}
+
+	jsonAggregate, _ := json.Marshal(userAggregate)
+	errR := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(jsonAggregate))
+	if errR != nil {
+		um.logger.Error("error set user with id %d to cache after change user", userId)
+	}
+
+	return &userAggregate, nil
 }

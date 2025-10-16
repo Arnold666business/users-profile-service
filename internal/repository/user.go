@@ -32,6 +32,7 @@ const (
 )
 
 func (user *User) getBy(ctx context.Context, field Field, value interface{}) (*models.User, error) {
+	db := GetQuerier(ctx, user.db)
 	var fieldName string
 	switch field {
 	case Id:
@@ -51,7 +52,7 @@ func (user *User) getBy(ctx context.Context, field Field, value interface{}) (*m
 	`, fieldName)
 
 	var u models.User
-	err := user.db.QueryRow(ctx, query, value).Scan(
+	err := db.QueryRow(ctx, query, value).Scan(
 		&u.Id,
 		&u.Login,
 		&u.Email,
@@ -79,11 +80,12 @@ func (user *User) GetByLogin(ctx context.Context, login string) (*models.User, e
 }
 
 func (user *User) Save(ctx context.Context, userToCreate *models.User) (int64, error) {
+	db := GetQuerier(ctx, user.db)
 	query := `
 		INSERT INTO users_profile.users (login, email, access_email_status, role, is_deleted, delete_at) VALUES ($1, $2, $3, $4, $5, $6)
 		 RETURNING id;
 	`
-	err := user.db.QueryRow(ctx, query,
+	err := db.QueryRow(ctx, query,
 		userToCreate.Login,
 		userToCreate.Email,
 		userToCreate.AccessEmailStatus,
@@ -98,6 +100,7 @@ func (user *User) Save(ctx context.Context, userToCreate *models.User) (int64, e
 }
 
 func (user *User) updateField(ctx context.Context, id int64, setField Field, setValue interface{}) error {
+	db := GetQuerier(ctx, user.db)
 	if setField == Id {
 		return fmt.Errorf("cannot update id field")
 	}
@@ -115,12 +118,9 @@ func (user *User) updateField(ctx context.Context, id int64, setField Field, set
 		return fmt.Errorf("unknown set field %v", setField)
 	}
 
-	query := fmt.Sprintf(
-		"UPDATE users_profile.users SET %s = $1, updated_at = NOW() WHERE id = $2",
-		setFieldName,
-	)
+	query := "UPDATE users_profile.users SET " + setFieldName + " = $1, updated_at = NOW() WHERE id = $2"
 
-	_, err := user.db.Exec(ctx, query, setValue, id)
+	_, err := db.Exec(ctx, query, setValue, id)
 	if err != nil {
 		return err
 	}
@@ -141,18 +141,19 @@ func (user *User) UpdateAccessEmailStatus(ctx context.Context, id int64, newStat
 }
 
 func (user *User) Update(ctx context.Context, u *models.User) error {
+	db := GetQuerier(ctx, user.db)
 	query := `
 		UPDATE users_profile.users  SET 
 		                                login=$1, 
 		                                email=$2, 
-		                                access_email_status=$3 
-		                                role=$4 
-		                            is_deleted=$5 
+		                                access_email_status=$3 ,
+		                                role=$4 ,
+		                            is_deleted=$5 ,
 		                            deleted_at=$6 
 		                            WHERE id=$7;
 	`
 
-	_, err := user.db.Exec(ctx, query,
+	_, err := db.Exec(ctx, query,
 		u.Login,
 		u.Email,
 		u.AccessEmailStatus,
@@ -165,4 +166,39 @@ func (user *User) Update(ctx context.Context, u *models.User) error {
 		return fmt.Errorf("failed to update users for id=%d: %w", u.Id, err)
 	}
 	return nil
+}
+
+func (user *User) GetUserAggregate(ctx context.Context, id int64) (models.UserAggregate, error) {
+	db := GetQuerier(ctx, user.db)
+	query := `
+		SELECT u.id, u.login, u.email, u.access_email_status, u.role, u.is_deleted, u.delete_at, 
+            COALESCE(btd.type_id, 0) as block_type_id, 
+            COALESCE(ubs.forever_flag, false) as forever_flag, 
+            COALESCE(ubs.unblock_date, '') as unblock_date,
+            COALESCE(btd.title, '') as block_title, 
+            COALESCE(btd.description, '') as block_description
+		FROM users_profile.users AS u
+		LEFT JOIN users_profile.users_block_status AS ubs ON ubs.user_id = u.id 
+		LEFT JOIN users_profile.block_type_dictionary AS btd ON ubs.block_type_id = btd.type_id
+		WHERE u.id = $1;
+	`
+	var aggregate models.UserAggregate
+	err := db.QueryRow(ctx, query, id).Scan(
+		&aggregate.Id,
+		&aggregate.Login,
+		&aggregate.Email,
+		&aggregate.EmailAccess,
+		&aggregate.Role,
+		&aggregate.IsDeleted,
+		&aggregate.DeletedAt,
+		&aggregate.BlockTypeId,
+		&aggregate.ForeverFlag,
+		&aggregate.UnBlockDate,
+		&aggregate.BlockTitle,
+		&aggregate.BlockDescription,
+	)
+	if err != nil {
+		return aggregate, err
+	}
+	return aggregate, nil
 }

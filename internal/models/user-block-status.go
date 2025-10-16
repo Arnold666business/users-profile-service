@@ -8,6 +8,7 @@ type UserBlockStatus struct {
 	BlockTypeId int
 	ForeverFlag bool
 	UnblockDate time.Time
+	IsActive    bool
 }
 
 func (u *UserBlockStatus) SetUnblockDate(hours int) {

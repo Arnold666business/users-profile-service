@@ -23,8 +23,9 @@ func NewBlockTypeDictionary(db *pgxpool.Pool) *BlockTypeDictionary {
 }
 
 func (btdr *BlockTypeDictionary) GetByBlockType(ctx context.Context, typeId int) (*models.BlockTypeDictionary, error) {
+	db := GetQuerier(ctx, btdr.db)
 	var btd models.BlockTypeDictionary
-	err := btdr.db.QueryRow(ctx, `SELECT type_id, title, description, hour
+	err := db.QueryRow(ctx, `SELECT type_id, title, description, hour
           FROM users_profile.block_type_dictionary WHERE type_id = $1;`, typeId).Scan(
 		&btd.BlockType, &btd.Title, &btd.Description, &btd.Hour)
 	if err != nil {

@@ -42,7 +42,6 @@ func Build(logger *zap.SugaredLogger) error {
 			l.Errorf("Error unmarshalling message from kafka: %v", err)
 			continue
 		}
-		go handle(data)
 	}
 	reader.Close()
 	return nil

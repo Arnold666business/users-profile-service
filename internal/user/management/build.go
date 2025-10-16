@@ -12,6 +12,7 @@ type UserManager struct {
 	userRepository *repository.User
 	uhRepository   *repository.UserHistory
 	redis          *redis.RedisProvider
+	transactor     *repository.Transactor
 }
 
 func Build(
@@ -19,11 +20,13 @@ func Build(
 	userRepository *repository.User,
 	uhRepository *repository.UserHistory,
 	redis *redis.RedisProvider,
+	transactor *repository.Transactor,
 ) (*UserManager, error) {
 	return &UserManager{
 		logger:         logger,
 		userRepository: userRepository,
 		uhRepository:   uhRepository,
 		redis:          redis,
+		transactor:     transactor,
 	}, nil
 }
