@@ -15,6 +15,7 @@ type BlockedInfo struct {
 	Forever     bool      `json:"forever_flag"`
 }
 
+// todo: залупа
 func Build(logger *zap.SugaredLogger) error {
 	cfg, err := NewConsumerConfig()
 	if err != nil {

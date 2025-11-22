@@ -8,25 +8,23 @@ import (
 )
 
 type UserManager struct {
-	logger         *zap.SugaredLogger
-	userRepository *repository.User
-	uhRepository   *repository.UserHistory
-	redis          *redis.RedisProvider
-	transactor     *repository.Transactor
+	logger                *zap.SugaredLogger
+	userRepository        *repository.User
+	userHistoryRepository *repository.UserHistory
+	redis                 *redis.RedisProvider
+	transactor            *repository.Transactor
 }
 
 func Build(
 	logger *zap.SugaredLogger,
-	userRepository *repository.User,
-	uhRepository *repository.UserHistory,
+	repositories *repository.Repositories,
 	redis *redis.RedisProvider,
-	transactor *repository.Transactor,
-) (*UserManager, error) {
+) *UserManager {
 	return &UserManager{
-		logger:         logger,
-		userRepository: userRepository,
-		uhRepository:   uhRepository,
-		redis:          redis,
-		transactor:     transactor,
-	}, nil
+		logger:                logger,
+		userRepository:        repositories.UserRepository,
+		userHistoryRepository: repositories.UserHistoryRepository,
+		redis:                 redis,
+		transactor:            repositories.Transactor,
+	}
 }

@@ -1,11 +1,9 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -30,25 +28,4 @@ func Build(logger *zap.SugaredLogger, router *chi.Mux) *Server {
 		},
 		Logger: l,
 	}
-}
-
-func (s *Server) Start() {
-	go func() {
-		s.Logger.Debugf("starting http server on %s", s.Instance.Addr)
-		if err := s.Instance.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.Logger.Warnw("http server unexcepted error", "error", err)
-		}
-	}()
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-	s.stop()
-}
-
-func (s *Server) stop() {
-	s.Instance.Close()
-	if s.DB != nil {
-		s.DB.Close()
-	}
-
 }

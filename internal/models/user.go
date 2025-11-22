@@ -12,7 +12,7 @@ type User struct {
 	DeletedAt         time.Time
 }
 
-type UserAggregate struct {
+type UserProfile struct {
 	Id               int64
 	Login            string
 	Email            string

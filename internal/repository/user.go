@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"users-profile-service/internal/models"
@@ -168,7 +169,7 @@ func (user *User) Update(ctx context.Context, u *models.User) error {
 	return nil
 }
 
-func (user *User) GetUserAggregate(ctx context.Context, id int64) (models.UserAggregate, error) {
+func (user *User) GetUserAggregate(ctx context.Context, id int64) (*models.UserProfile, error) {
 	db := GetQuerier(ctx, user.db)
 	query := `
 		SELECT u.id, u.login, u.email, u.access_email_status, u.role, u.is_deleted, u.delete_at, 
@@ -180,9 +181,9 @@ func (user *User) GetUserAggregate(ctx context.Context, id int64) (models.UserAg
 		FROM users_profile.users AS u
 		LEFT JOIN users_profile.users_block_status AS ubs ON ubs.user_id = u.id 
 		LEFT JOIN users_profile.block_type_dictionary AS btd ON ubs.block_type_id = btd.type_id
-		WHERE u.id = $1;
+		WHERE u.id = $1 AND ubs.is_active = true;
 	`
-	var aggregate models.UserAggregate
+	var aggregate models.UserProfile
 	err := db.QueryRow(ctx, query, id).Scan(
 		&aggregate.Id,
 		&aggregate.Login,
@@ -198,7 +199,10 @@ func (user *User) GetUserAggregate(ctx context.Context, id int64) (models.UserAg
 		&aggregate.BlockDescription,
 	)
 	if err != nil {
-		return aggregate, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, NotFoundUserError
+		}
+		return nil, err
 	}
-	return aggregate, nil
+	return &aggregate, nil
 }

@@ -2,6 +2,7 @@ package delete
 
 import (
 	"context"
+	"strconv"
 	"time"
 	"users-profile-service/internal/models"
 )
@@ -15,18 +16,18 @@ type KitchenService interface {
 	UnPublishKitchenByOwerId(ctx context.Context, id int64)
 }
 
-func (processor *DeleteUserProcessor) process(ctx context.Context, id int64) (int64, error) {
-	l := processor.logger.Named("deleted.user.processing")
+func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (int64, error) {
+	l := processor.logger.Named("deleted.users.processing")
 
 	user, err := processor.userRepository.GetById(ctx, id)
 	if err != nil {
-		l.Errorw("error getting user", "userId", id, "err", err)
+		l.Errorw("error getting users", "userId", id, "err", err)
 		return 0, err
 	}
 
 	//todo: вот эти хуйни все сделать нормально
 	if len(processor.kitchenService.GetKitchenActiveBookingsByOwnerId(ctx, user.Id)) != 0 {
-		l.Warnw("kitchen has active bookings", "user", user)
+		l.Warnw("kitchen has active bookings", "users", user)
 		return 0, nil
 	}
 
@@ -38,11 +39,11 @@ func (processor *DeleteUserProcessor) process(ctx context.Context, id int64) (in
 		user.DeletedAt = time.Now()
 		err = processor.userRepository.Update(ctx, user)
 		if err != nil {
-			l.Errorw("error updating user", "user", user)
+			l.Errorw("error updating users", "users", user)
 			return err
 		}
 
-		_, err = processor.uhRepository.Save(ctx, user, models.DELETE)
+		_, err = processor.userHistoryRepository.Save(ctx, user, models.DELETE)
 		if err != nil {
 			l.Errorw("error adding user_history", "userId", id, "err", err)
 			return err
@@ -51,6 +52,10 @@ func (processor *DeleteUserProcessor) process(ctx context.Context, id int64) (in
 	})
 	if err != nil {
 		return 0, err
+	}
+
+	if errR := processor.redis.DeleteUserCache(ctx, strconv.FormatInt(id, 10)); errR != nil {
+		processor.logger.Error("error delete users with id %d to cache after delete user", id)
 	}
 
 	//todo: вот эти хуйни все сделать нормально

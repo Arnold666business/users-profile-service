@@ -90,6 +90,10 @@ func (rb *RedisProvider) SetUserCache(ctx context.Context, key string, value str
 	return rb.set(ctx, userCachePrefix, key, value, expiration)
 }
 
+func (rb *RedisProvider) DeleteUserCache(ctx context.Context, key string) error {
+	return rb.delete(ctx, userCachePrefix, key)
+}
+
 func (rb *RedisProvider) SetIdempotencyStorage(ctx context.Context, key string, value string) error {
 	expiration := time.Duration(rb.cfg.RedisIdempotencyTTL) * time.Hour
 	return rb.set(ctx, idempotencyCachePrefix, key, value, expiration)
@@ -103,4 +107,9 @@ func (rd *RedisProvider) set(ctx context.Context, prefix string, key string, val
 func (rd *RedisProvider) get(ctx context.Context, prefix string, key string) (string, error) {
 	cmd := rd.client.B().Get().Key(prefix + "::" + key).Build()
 	return rd.client.Do(ctx, cmd).ToString()
+}
+
+func (rd *RedisProvider) delete(ctx context.Context, prefix string, key string) error {
+	cmd := rd.client.B().Del().Key(prefix + "::" + key).Build()
+	return rd.client.Do(ctx, cmd).Error()
 }

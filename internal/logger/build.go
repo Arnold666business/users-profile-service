@@ -48,6 +48,6 @@ func Build() (*zap.SugaredLogger, error) {
 
 	core := zapcore.NewTee(fileCore, stdoutCore)
 	logger := zap.New(core, zap.AddCaller()).With(
-		zap.String("service", "user-profile-service"))
+		zap.String("users", "users-profile-users"))
 	return logger.Sugar(), nil
 }

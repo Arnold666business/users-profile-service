@@ -17,8 +17,8 @@ func NewUserHistory(db *pgxpool.Pool) *UserHistory {
 	return &UserHistory{db: db}
 }
 
-func (user *UserHistory) Save(ctx context.Context, u *models.User, action models.ACTION) (int64, error) {
-	db := GetQuerier(ctx, user.db)
+func (uHistory *UserHistory) Save(ctx context.Context, u *models.User, action models.ACTION) (int64, error) {
+	db := GetQuerier(ctx, uHistory.db)
 	userHistory := models.UserHistory{
 		UserId:   u.Id,
 		Action:   action,

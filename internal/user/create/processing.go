@@ -2,8 +2,8 @@ package create
 
 import (
 	"context"
-	"fmt"
 	"strconv"
+	common_error "users-profile-service/internal/common-error"
 	"users-profile-service/internal/external/kafka/producer/NewUser"
 	"users-profile-service/internal/models"
 	"users-profile-service/internal/user"
@@ -17,14 +17,14 @@ type CreateRequest struct {
 }
 
 func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateRequest) (int64, error) {
-	l := processor.logger.Named("create.user.processing")
+	l := processor.logger.Named("create.users.processing")
 
 	val, err := processor.redis.GetIdempotencyStorage(ctx, req.IdempotencyKey)
 	if val != "" {
 		l.Debugf("get idempotency key: %s, value: %s", req.IdempotencyKey, val)
 		num, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
-			return 0, err
+			return 0, common_error.NewError(err.Error(), common_error.TypeInternal)
 		}
 		return num, nil
 	}
@@ -34,12 +34,12 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 
 	if validateErr := user.ValidateEmail(ctx, req.Email, processor.userRepository); validateErr != "" {
 		l.Debugf("User email is invalid: %s", validateErr)
-		return 0, fmt.Errorf(validateErr)
+		return 0, common_error.NewError(validateErr, common_error.TypeInternal)
 	}
 
 	if validateErr := user.ValidateLogin(ctx, req.Login, processor.userRepository); validateErr != "" {
 		l.Debugf("User login is invalid: %s", validateErr)
-		return 0, fmt.Errorf(validateErr)
+		return 0, common_error.NewError(validateErr, common_error.TypeInternal)
 	}
 	newUser := &models.User{
 		Login:             req.Login,
@@ -52,11 +52,11 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 
 		userId, err := processor.userRepository.Save(ctx, newUser)
 		if err != nil {
-			l.Debugf("Error creating user: %s", err)
+			l.Debugf("Error creating users: %s", err)
 			return err
 		}
 
-		_, err = processor.uhRepository.Save(ctx, newUser, models.CREATE)
+		_, err = processor.userHistoryRepository.Save(ctx, newUser, models.CREATE)
 		if err != nil {
 			l.Errorw("error adding user_history", "userId", userId, "err", err)
 			return err
@@ -64,7 +64,7 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 		return nil
 	})
 	if errTx != nil {
-		return 0, err
+		return 0, common_error.NewError(errTx.Error(), common_error.TypeInternal)
 	}
 
 	errI := processor.redis.SetIdempotencyStorage(ctx, req.IdempotencyKey, strconv.FormatInt(newUser.Id, 10))
@@ -72,11 +72,13 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 		l.Errorf("error with save to idempotency storage %s: %s", req.IdempotencyKey, errI)
 	}
 
-	//todo: вот эти хуйни все сделать нормально
-	errProducer := processor.newUserProducer.Produce(NewUser.NewUserTopicData{Id: newUser.Id, Role: req.Role})
-	if errProducer != nil {
-		l.Debugf("Error creating user: %s", errProducer)
-	}
+	//todo: залупа
+	go func() {
+		errProducer := processor.newUserProducer.Produce(NewUser.NewUserTopicData{Id: newUser.Id, Role: req.Role})
+		if errProducer != nil {
+			l.Debugf("Error send user new user event: %s", errProducer)
+		}
+	}()
 
 	return newUser.Id, nil
 }

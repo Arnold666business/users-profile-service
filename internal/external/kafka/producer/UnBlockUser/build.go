@@ -2,6 +2,7 @@ package UnBlockUser
 
 import (
 	"os"
+	"time"
 	"users-profile-service/internal/external/kafka/producer"
 
 	"go.uber.org/zap"
@@ -9,6 +10,11 @@ import (
 
 type Producer struct {
 	*producer.BaseProducer
+}
+
+type UnblockUserTopicData struct {
+	UserId    int64     `json:"user_id"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 func Build(logger *zap.SugaredLogger) (*Producer, error) {
@@ -19,6 +25,6 @@ func Build(logger *zap.SugaredLogger) (*Producer, error) {
 	return &Producer{baseProducer}, nil
 }
 
-func (p *Producer) Produce() {
+func (p *Producer) Produce(data UnblockUserTopicData) error {
 	//message := kafka.Message{}
 }

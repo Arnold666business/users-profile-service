@@ -3,12 +3,13 @@ package models
 import "time"
 
 type UserBlockStatus struct {
-	Id          int64
-	UserId      int64
-	BlockTypeId int
-	ForeverFlag bool
-	UnblockDate time.Time
-	IsActive    bool
+	Id               int64
+	UserId           int64
+	BlockTypeId      int
+	ForeverFlag      bool
+	UnblockDate      time.Time
+	IsActive         bool
+	UnBlockEventSent bool
 }
 
 func (u *UserBlockStatus) SetUnblockDate(hours int) {

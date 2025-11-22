@@ -6,7 +6,7 @@ info:
 paths:
   /api/{version}/users:
     post:
-      summary: Create user
+      summary: Create users
       parameters:
         - name: version
           in: path
@@ -95,7 +95,7 @@ paths:
 
   /api/{version}/users/{user_id}:
     get:
-      summary: Get user
+      summary: Get users
       parameters:
         - name: version
           in: path
@@ -135,7 +135,7 @@ paths:
                 $ref: '#/components/schemas/Error'
 
     delete:
-      summary: Delete user
+      summary: Delete users
       parameters:
         - name: version
           in: path

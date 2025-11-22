@@ -1,6 +1,7 @@
 package create
 
 import (
+	"users-profile-service/internal/external/kafka/producer"
 	"users-profile-service/internal/external/kafka/producer/NewUser"
 	"users-profile-service/internal/repository"
 	"users-profile-service/internal/repository/redis"
@@ -9,28 +10,26 @@ import (
 )
 
 type CreateUserProcessor struct {
-	logger          *zap.SugaredLogger
-	uhRepository    *repository.UserHistory
-	userRepository  *repository.User
-	newUserProducer *NewUser.Producer
-	redis           *redis.RedisProvider
-	transactor      *repository.Transactor
+	logger                *zap.SugaredLogger
+	userHistoryRepository *repository.UserHistory
+	userRepository        *repository.User
+	newUserProducer       *NewUser.Producer
+	redis                 *redis.RedisProvider
+	transactor            *repository.Transactor
 }
 
 func Build(
 	logger *zap.SugaredLogger,
-	uhRepository *repository.UserHistory,
-	userRepository *repository.User,
-	newUserProducer *NewUser.Producer,
+	repositories *repository.Repositories,
+	producers *producer.Producers,
 	redis *redis.RedisProvider,
-	transactor *repository.Transactor,
-) (*CreateUserProcessor, error) {
+) *CreateUserProcessor {
 	return &CreateUserProcessor{
-		logger:          logger,
-		uhRepository:    uhRepository,
-		userRepository:  userRepository,
-		newUserProducer: newUserProducer,
-		redis:           redis,
-		transactor:      transactor,
-	}, nil
+		logger:                logger,
+		userHistoryRepository: repositories.UserHistoryRepository,
+		userRepository:        repositories.UserRepository,
+		newUserProducer:       producers.NewUser,
+		redis:                 redis,
+		transactor:            repositories.Transactor,
+	}
 }

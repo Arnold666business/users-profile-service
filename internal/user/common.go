@@ -13,7 +13,6 @@ var (
 	wrongLoginSymbols = "%$#*"
 )
 
-// todo: вот тут корчое моча короче типо с этим ну типо он даже при апдейте мотрит типо пизжа пидорасы или че там а я жа яне понимаю
 // "" если валиден
 func ValidateEmail(ctx context.Context, email string, userRepository *repository.User) string {
 	if strings.TrimSpace(email) == "" {
@@ -25,7 +24,7 @@ func ValidateEmail(ctx context.Context, email string, userRepository *repository
 			return err.Error()
 		}
 	} else {
-		return "user with email " + email + " already exists"
+		return "users with email " + email + " already exists"
 	}
 	return ""
 }
@@ -47,12 +46,12 @@ func ValidateLogin(ctx context.Context, login string, userRepository *repository
 		}
 	}
 
-	if _, err := userRepository.GetByEmail(ctx, login); err != nil {
+	if _, err := userRepository.GetByLogin(ctx, login); err != nil {
 		if !errors.Is(err, repository.NotFoundUserError) {
 			return err.Error()
 		}
 	} else {
-		return "user with login " + login + " already exists"
+		return "users with login " + login + " already exists"
 	}
 	return ""
 }

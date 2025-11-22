@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"strconv"
 	"users-profile-service/internal/models"
 )
 
@@ -12,12 +13,12 @@ type BlockRequest struct {
 }
 
 func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequest) error {
-	l := processor.logger.Named("block.user.processing")
+	l := processor.logger.Named("block.users.processing")
 
 	userId := data.UserId
 	user, err := processor.userRepository.GetById(ctx, userId)
 	if err != nil {
-		l.Errorw("error getting user", "userId", userId, "err", err)
+		l.Errorw("error getting users", "userId", userId, "err", err)
 		return err
 	}
 
@@ -41,11 +42,16 @@ func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequ
 			return err
 		}
 
-		_, err = processor.uhRepository.Save(ctx, user, models.BLOCKED)
+		_, err = processor.userHistoryRepository.Save(ctx, user, models.BLOCKED)
 		if err != nil {
 			l.Errorw("error adding user_history", "userId", userId, "err", err)
 			return err
 		}
+
+		if errR := processor.redis.DeleteUserCache(ctx, strconv.FormatInt(userId, 10)); errR != nil {
+			processor.logger.Error("error delete users with id %d to cache after block user", userId)
+		}
+
 		return nil
 	})
 }
