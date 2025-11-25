@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"sync"
 	"users-profile-service/internal/config"
 )
 
@@ -12,11 +13,16 @@ type Logger struct {
 	MaxAge     int    `env:"LOGGING_MAX_AGE"`
 }
 
-func NewLoggerConfig() (*Logger, error) {
-	cfg := &Logger{}
-	err := config.Load(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
+var (
+	once        sync.Once
+	cfgInstance *Logger
+)
+
+func NewLoggerConfig() error {
+	var err error
+	once.Do(func() {
+		cfgInstance = &Logger{}
+		err = config.Load(cfgInstance)
+	})
+	return err
 }

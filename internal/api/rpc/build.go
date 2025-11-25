@@ -72,7 +72,7 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 		return nil, status.Errorf(codes.Unauthenticated, "x-Token is not provided")
 	}
 
-	xToken := md["x-token"]
+	xToken := md["x-Token"]
 	if len(xToken) == 0 {
 		return nil, status.Errorf(codes.Unauthenticated, "x-Token is not provided")
 	}

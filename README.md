@@ -16,3 +16,4 @@ type_id:
 Запуск local - `docker compose -f docker-compose.local.yml up -d`
 
 
+когда паники бля

@@ -33,14 +33,14 @@ func (uHistory *UserHistory) Save(ctx context.Context, u *models.User, action mo
 		},
 	}
 
-	oldFields, _ := json.Marshal(userHistory.OldFields) //??????????? нужна ли эта хуйня??
+	oldFields, _ := json.Marshal(userHistory.OldFields)
 	query := `
 		INSERT INTO users_h (user_id, action, create_at, email, login, old_fields) 
 		VALUES ($1, $2, $3, $4, $5, &6)
 		RETURNING id
 	`
 	err := db.QueryRow(ctx, query,
-		userHistory.UserId, userHistory.Action.String(), userHistory.CreateAt, userHistory.Email, userHistory.Login, oldFields,
+		&userHistory.UserId, userHistory.Action.String(), &userHistory.CreateAt, &userHistory.Email, &userHistory.Login, &oldFields,
 	).Scan(userHistory.Id)
 	if err != nil {
 		return 0, err

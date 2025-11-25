@@ -2,16 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"users-profile-service/internal/models"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-var (
-	NotFoundUserBlockStatusError = errors.New("user_block_status not found")
 )
 
 type UserBlockStatus struct {
@@ -22,23 +16,7 @@ func NewUserBlockStatus(db *pgxpool.Pool) *UserBlockStatus {
 	return &UserBlockStatus{db: db}
 }
 
-func (ubsr *UserBlockStatus) GetByUserId(ctx context.Context, id int64) (*models.UserBlockStatus, error) {
-	db := GetQuerier(ctx, ubsr.db)
-	var ubs models.UserBlockStatus
-	query := `SELECT id, user_id, block_type_id, forever_flag, unblock_date, is_active, unblock_event_sent
-          FROM users_profile.users_block_status WHERE user_id = $1;`
-	err := db.QueryRow(ctx, query, id).Scan(
-		&ubs.Id, &ubs.UserId, &ubs.BlockTypeId, &ubs.ForeverFlag, &ubs.UnblockDate, &ubs.IsActive, &ubs.UnBlockEventSent)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, NotFoundUserBlockStatusError
-		} else {
-			return nil, fmt.Errorf("user_block_status, user_id: %v: %w", id, err)
-		}
-	}
-	return &ubs, nil
-}
-
+// for admin only
 func (ubsr *UserBlockStatus) Save(ctx context.Context, ubs *models.UserBlockStatus) (int64, error) {
 	db := GetQuerier(ctx, ubsr.db)
 	query := `

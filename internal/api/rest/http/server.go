@@ -15,10 +15,7 @@ func (s *Server) Start() {
 	}()
 }
 
-func (s *Server) Stop(ctx context.Context) {
+func (s *Server) Closer(ctx context.Context) error {
 	s.Logger.Info("Shutting down base server...")
-	err := s.Instance.Shutdown(ctx)
-	if err != nil {
-		s.Logger.Warnw("error shutting down base server", "error", err)
-	}
+	return s.Instance.Shutdown(ctx)
 }

@@ -8,15 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type ProducerConfig struct {
-	Brokers          []string `env:"KAFKA_BROKERS" env-separator:","`
-	NewUserTopic     string   `env:"NEW_USER_TOPIC"`
-	DeletedUserTopic string   `env:"DELETED_USER_TOPIC"`
-	RetryAttempts    int      `env:"KAFKA_RETRY_ATTEMPTS"`
-	RetryInterval    int      `env:"KAFKA_RETRY_INTERVAL_SECONDS"`
-	Timeout          int      `env:"KAFKA_SEND_TIMEOUT_SECONDS"`
-}
-
 type BaseProducer struct {
 	writer *kafka.Writer
 	cfg    *ProducerConfig
@@ -26,12 +17,12 @@ type BaseProducer struct {
 
 func New(logger *zap.SugaredLogger, topic string) (*BaseProducer, error) {
 	l := logger.Named("kafka.producer").With(zap.String("topic", topic))
-	cfg, err := NewProducerConfig()
+	err := NewProducerConfig()
 	if err != nil {
 		return nil, err
 	}
 	writer := &kafka.Writer{
-		Addr:                   kafka.TCP(cfg.Brokers...),
+		Addr:                   kafka.TCP(cfgInstance.Brokers...),
 		Topic:                  topic,
 		Balancer:               &kafka.LeastBytes{},
 		BatchSize:              100,
@@ -43,7 +34,7 @@ func New(logger *zap.SugaredLogger, topic string) (*BaseProducer, error) {
 	}
 	return &BaseProducer{
 		writer: writer,
-		cfg:    cfg,
+		cfg:    cfgInstance,
 		logger: l,
 		topic:  topic,
 	}, nil

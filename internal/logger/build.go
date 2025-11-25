@@ -11,11 +11,11 @@ import (
 )
 
 func Build() (*zap.SugaredLogger, error) {
-	cfg, err := NewLoggerConfig()
+	err := NewLoggerConfig()
 	if err != nil {
 		return nil, err
 	}
-	logLevel := cfg.Level
+	logLevel := cfgInstance.Level
 	var level zapcore.Level
 	err = level.Set(logLevel)
 	if err != nil {
@@ -27,10 +27,10 @@ func Build() (*zap.SugaredLogger, error) {
 	encoderCfg.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
 
 	fileWriter := &lumberjack.Logger{
-		Filename:   cfg.FileName,
-		MaxSize:    cfg.MaxSize,    //будет создан новый файл
-		MaxBackups: cfg.MaxBackups, //сколько старых файлов хранить
-		MaxAge:     cfg.MaxAge,
+		Filename:   cfgInstance.FileName,
+		MaxSize:    cfgInstance.MaxSize,    //будет создан новый файл
+		MaxBackups: cfgInstance.MaxBackups, //сколько старых файлов хранить
+		MaxAge:     cfgInstance.MaxAge,
 		Compress:   true, //gzip compression
 	}
 

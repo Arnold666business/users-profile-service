@@ -7,3 +7,6 @@ CREATE TABLE IF NOT EXISTS users_profile.users (
     is_deleted BOOLEAN DEFAULT FALSE,
     delete_at DATE
 )
+
+CREATE INDEX email_idx ON users_profile.users(email);
+CREATE INDEX login_idx ON users_profile.users(login);

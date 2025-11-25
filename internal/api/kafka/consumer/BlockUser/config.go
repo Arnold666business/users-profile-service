@@ -1,6 +1,9 @@
 package BlockUser
 
-import "users-profile-service/internal/config"
+import (
+	"sync"
+	"users-profile-service/internal/config"
+)
 
 type ConsumerConfig struct {
 	Brokers []string `env:"KAFKA_BROKERS" env-separate:","`
@@ -8,11 +11,16 @@ type ConsumerConfig struct {
 	Topic   string   `env:"BLOCK_UNBLOCK_USER_TOPIC"`
 }
 
+var (
+	once        sync.Once
+	cgfInstance *ConsumerConfig
+)
+
 func NewConsumerConfig() (*ConsumerConfig, error) {
-	cfg := &ConsumerConfig{}
-	err := config.Load(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
+	var err error
+	once.Do(func() {
+		cfgInstance := &ConsumerConfig{}
+		err = config.Load(cfgInstance)
+	})
+	return cgfInstance, err
 }

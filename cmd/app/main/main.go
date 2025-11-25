@@ -6,24 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"users-profile-service/internal/api/rest"
-	"users-profile-service/internal/api/rest/http"
-	"users-profile-service/internal/api/rpc"
-	"users-profile-service/internal/api/rpc/users"
-	"users-profile-service/internal/external/kafka/producer"
+	"users-profile-service/internal/app"
 	"users-profile-service/internal/logger"
-	"users-profile-service/internal/repository"
-	"users-profile-service/internal/repository/postgres"
-	"users-profile-service/internal/repository/redis"
-	"users-profile-service/internal/user/block"
-	"users-profile-service/internal/user/create"
-	"users-profile-service/internal/user/delete"
-	"users-profile-service/internal/user/management"
+	"users-profile-service/pkg/close"
 )
-
-type Stopper interface {
-	stop()
-}
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -34,47 +20,18 @@ func main() {
 		panic("logger init failed" + err.Error())
 	}
 
-	db, err := postgres.Build(l)
-	if err != nil {
-		panic("logger init postgres" + err.Error())
-	}
-	defer db.Close()
+	closer := &close.Closer{}
 
-	repos := repository.Build(db)
-
-	redisProvider, err := redis.Build(l)
+	readyApp, err := app.Build(closer, l)
 	if err != nil {
-		l.Error("redis init failed" + err.Error())
+		panic("app build failed" + err.Error())
 	}
 
-	producers, err := producer.Build(l)
-	if err != nil {
-		panic("producer build failed" + err.Error())
-	}
-
-	грпс
-
-	deleteUserService := delete.Build(l, repos, грпс, producers, redisProvider)
-	createUserService := create.Build(l, repos, producers, redisProvider)
-	blockUserService := block.Build(l, repos, redisProvider)
-
-	лисенер
-
-	userManagement := management.Build(l, repos, redisProvider)
-
-	router := rest.BuildRouter(l, createUserService, deleteUserService, userManagement)
-	baseServer := http.Build(l, router)
-	go baseServer.Start()
-
-	usersServiceImpl := users.Build(l, userManagement)
-	grpcServer := rpc.Build(l, usersServiceImpl)
-	go grpcServer.Start()
+	readyApp.Run(ctx)
 
 	<-ctx.Done()
 	l.Info("Shutdown signal received")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	baseServer.Stop(shutdownCtx)
-
+	closer.CloseAll(shutdownCtx)
 }

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"sync"
 	"time"
 	"users-profile-service/internal/config"
 )
@@ -20,13 +21,18 @@ type DB struct {
 	BackoffMultiplier float64       `env:"DB_BACKOFF_MULTIPLIER"`
 }
 
-func NewDBConfig() (*DB, error) {
-	cfg := &DB{}
-	err := config.Load(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
+var (
+	once        sync.Once
+	cfgInstance *DB
+)
+
+func NewDBConfig() error {
+	var err error
+	once.Do(func() {
+		cfgInstance = &DB{}
+		err = config.Load(cfgInstance)
+	})
+	return err
 }
 
 func (db *DB) DSN() string {

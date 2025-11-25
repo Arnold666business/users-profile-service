@@ -2,8 +2,6 @@ package rpc
 
 import (
 	"net"
-	"os"
-	"os/signal"
 )
 
 func (server *GrpcServer) Start() {
@@ -17,14 +15,9 @@ func (server *GrpcServer) Start() {
 			server.Logger.Fatalw("failed to serve", "port", server.Port, "error", err)
 		}
 	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-	server.stop()
 }
 
-func (server *GrpcServer) stop() {
+func (server *GrpcServer) Close() {
 	server.Logger.Info("Shutting down gRPC server...")
 	server.Instance.GracefulStop()
 }

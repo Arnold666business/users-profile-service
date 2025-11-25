@@ -1,6 +1,9 @@
 package redis
 
-import "users-profile-service/internal/config"
+import (
+	"sync"
+	"users-profile-service/internal/config"
+)
 
 type RedisConfig struct {
 	RedisHost           string `env:"REDIS_HOST"`
@@ -10,11 +13,16 @@ type RedisConfig struct {
 	RedisIdempotencyTTL int    `env:"REDIS_USER_TTL_HOURS"`
 }
 
+var (
+	once sync.Once
+	cfg  *RedisConfig
+)
+
 func NewDBConfig() (*RedisConfig, error) {
-	cfg := &RedisConfig{}
-	err := config.Load(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
+	var err error
+	once.Do(func() {
+		cfg = &RedisConfig{}
+		err = config.Load(cfg)
+	})
+	return cfg, err
 }

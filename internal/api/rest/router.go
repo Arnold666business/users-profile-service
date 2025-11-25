@@ -2,6 +2,7 @@ package rest
 
 import (
 	"users-profile-service/internal/api/rest/handlers"
+	"users-profile-service/internal/api/rest/middleware"
 	"users-profile-service/internal/user/create"
 	"users-profile-service/internal/user/delete"
 	"users-profile-service/internal/user/management"
@@ -18,7 +19,7 @@ func BuildRouter(logger *zap.SugaredLogger,
 	r := chi.NewRouter()
 
 	r.Route("/api/{version}", func(r chi.Router) {
-		r.Use(xTokenMiddleware)
+		r.Use(middleware.ValidateTokenMiddleware(logger))
 
 		r.Route("/users", func(r chi.Router) {
 			r.Post("", handlers.CreateUserHandler(logger, createProcessor))

@@ -169,6 +169,7 @@ func (user *User) Update(ctx context.Context, u *models.User) error {
 	return nil
 }
 
+// ПОТЕСТИТЬ ЭТО
 func (user *User) GetUserAggregate(ctx context.Context, id int64) (*models.UserProfile, error) {
 	db := GetQuerier(ctx, user.db)
 	query := `

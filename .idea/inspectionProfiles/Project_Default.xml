@@ -4,6 +4,8 @@
     <inspection_tool class="GoDfaErrorMayBeNotNil" enabled="true" level="WARNING" enabled_by_default="true">
       <functions>
         <function importPath="users-profile-service/internal/external/kafka/producer" name="NewProducerConfig" />
+        <function importPath="users-profile-service/internal/repository/redis" name="Build" />
+        <function importPath="users-profile-service/internal/app" name="Build" />
       </functions>
       <methods>
         <method importPath="github.com/jackc/pgx/v5/pgxpool" receiver="*Pool" name="BeginTx" />

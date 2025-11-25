@@ -2,19 +2,34 @@ package producer
 
 import (
 	"context"
+	"sync"
 	"time"
 	"users-profile-service/internal/config"
 
 	"go.uber.org/zap"
 )
 
-func NewProducerConfig() (*ProducerConfig, error) {
-	cfg := &ProducerConfig{}
-	err := config.Load(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
+type ProducerConfig struct {
+	Brokers          []string `env:"KAFKA_BROKERS" env-separator:","`
+	NewUserTopic     string   `env:"NEW_USER_TOPIC"`
+	DeletedUserTopic string   `env:"DELETED_USER_TOPIC"`
+	RetryAttempts    int      `env:"KAFKA_RETRY_ATTEMPTS"`
+	RetryInterval    int      `env:"KAFKA_RETRY_INTERVAL_SECONDS"`
+	Timeout          int      `env:"KAFKA_SEND_TIMEOUT_SECONDS"`
+}
+
+var (
+	once        sync.Once
+	cfgInstance *ProducerConfig
+)
+
+func NewProducerConfig() error {
+	var err error
+	once.Do(func() {
+		cfgInstance = &ProducerConfig{}
+		err = config.Load(cfgInstance)
+	})
+	return err
 }
 
 func ProduceWithRetry(l *zap.SugaredLogger, cfg *ProducerConfig, produce func(ctx context.Context) error) error {

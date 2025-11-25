@@ -57,10 +57,6 @@ func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (in
 	if errR := processor.redis.DeleteUserCache(ctx, strconv.FormatInt(id, 10)); errR != nil {
 		processor.logger.Error("error delete users with id %d to cache after delete user", id)
 	}
-
-	//todo: вот эти хуйни все сделать нормально
-	//processor.auditProducer.Produce()
-
 	//todo: вот эти хуйни все сделать нормально
 	err = processor.deleteUserProducer.Produce(ctx, id)
 	if err != nil {

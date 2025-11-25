@@ -1,9 +1,8 @@
 package delete
 
 import (
-	"users-profile-service/internal/external/kafka/producer"
-	"users-profile-service/internal/external/kafka/producer/Audit"
 	"users-profile-service/internal/external/kafka/producer/DeletedUser"
+	"users-profile-service/internal/external/kafka/producer/build"
 	"users-profile-service/internal/repository"
 	"users-profile-service/internal/repository/redis"
 
@@ -18,7 +17,6 @@ type DeleteUserProcessor struct {
 	userHistoryRepository *repository.UserHistory
 	kitchenService        *KitchenService
 	deleteUserProducer    *DeletedUser.Producer
-	auditProducer         *Audit.Producer
 	transactor            *repository.Transactor
 	redis                 *redis.RedisProvider
 }
@@ -26,7 +24,7 @@ type DeleteUserProcessor struct {
 func Build(logger *zap.SugaredLogger,
 	repositories *repository.Repositories,
 	kitchenService *KitchenService,
-	producers *producer.Producers,
+	producers *build.Producers,
 	redis *redis.RedisProvider) *DeleteUserProcessor {
 	return &DeleteUserProcessor{
 		logger:                logger,
@@ -36,7 +34,6 @@ func Build(logger *zap.SugaredLogger,
 		userHistoryRepository: repositories.UserHistoryRepository,
 		kitchenService:        kitchenService,
 		deleteUserProducer:    producers.DeleteUser,
-		auditProducer:         producers.Audit,
 		transactor:            repositories.Transactor,
 		redis:                 redis,
 	}

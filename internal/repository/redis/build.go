@@ -61,8 +61,8 @@ func (rd *RedisProvider) Close() {
 	}
 }
 
-func (rb *RedisProvider) GetUsersCache(ctx context.Context, key string) (string, error) {
-	value, err := rb.get(ctx, userCachePrefix, key)
+func (rd *RedisProvider) GetUsersCache(ctx context.Context, key string) (string, error) {
+	value, err := rd.get(ctx, userCachePrefix, key)
 	if err != nil {
 		if rueidis.IsRedisNil(err) {
 			return "", nil
@@ -73,8 +73,8 @@ func (rb *RedisProvider) GetUsersCache(ctx context.Context, key string) (string,
 	return value, nil
 }
 
-func (rb *RedisProvider) GetIdempotencyStorage(ctx context.Context, key string) (string, error) {
-	value, err := rb.get(ctx, idempotencyCachePrefix, key)
+func (rd *RedisProvider) GetIdempotencyStorage(ctx context.Context, key string) (string, error) {
+	value, err := rd.get(ctx, idempotencyCachePrefix, key)
 	if err != nil {
 		if rueidis.IsRedisNil(err) {
 			return "", nil
@@ -85,18 +85,18 @@ func (rb *RedisProvider) GetIdempotencyStorage(ctx context.Context, key string) 
 	return value, nil
 }
 
-func (rb *RedisProvider) SetUserCache(ctx context.Context, key string, value string) error {
-	expiration := time.Duration(rb.cfg.RedisUserTTL) * time.Hour
-	return rb.set(ctx, userCachePrefix, key, value, expiration)
+func (rd *RedisProvider) SetUserCache(ctx context.Context, key string, value string) error {
+	expiration := time.Duration(rd.cfg.RedisUserTTL) * time.Hour
+	return rd.set(ctx, userCachePrefix, key, value, expiration)
 }
 
-func (rb *RedisProvider) DeleteUserCache(ctx context.Context, key string) error {
-	return rb.delete(ctx, userCachePrefix, key)
+func (rd *RedisProvider) DeleteUserCache(ctx context.Context, key string) error {
+	return rd.delete(ctx, userCachePrefix, key)
 }
 
-func (rb *RedisProvider) SetIdempotencyStorage(ctx context.Context, key string, value string) error {
-	expiration := time.Duration(rb.cfg.RedisIdempotencyTTL) * time.Hour
-	return rb.set(ctx, idempotencyCachePrefix, key, value, expiration)
+func (rd *RedisProvider) SetIdempotencyStorage(ctx context.Context, key string, value string) error {
+	expiration := time.Duration(rd.cfg.RedisIdempotencyTTL) * time.Hour
+	return rd.set(ctx, idempotencyCachePrefix, key, value, expiration)
 }
 
 func (rd *RedisProvider) set(ctx context.Context, prefix string, key string, value string, expiration time.Duration) error {

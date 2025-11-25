@@ -8,4 +8,4 @@ CREATE TABLE users_profile.users_block_status (
     unblock_event_sent BOOLEAN DEFAULT FALSE
 );
 
-CREATE INDEX idx_unblock_date_forever_flag ON users_profile.users_block_status(unblock_date, forever_flag) #is_active????
+CREATE INDEX user_id_and_block_type_id_idx ON users_profile.users_block_status(user_id, block_type_id);
