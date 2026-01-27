@@ -1,7 +1,6 @@
 package DeletedUser
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"users-profile-service/internal/external/kafka/producer"
@@ -22,7 +21,7 @@ func Build(logger *zap.SugaredLogger) (*Producer, error) {
 	return &Producer{baseProducer}, nil
 }
 
-func (p *Producer) Produce(ctx context.Context, id int64) error {
+func (p *Producer) Produce(id int64) error {
 	message := kafka.Message{Value: []byte(fmt.Sprintf("id:%d", id))}
-	return p.BaseProducer.Send(ctx, &message)
+	return p.BaseProducer.Send(&message)
 }

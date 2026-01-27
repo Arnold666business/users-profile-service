@@ -32,6 +32,7 @@ func New(logger *zap.SugaredLogger, topic string) (*BaseProducer, error) {
 		AllowAutoTopicCreation: false,
 		Async:                  false,
 	}
+
 	return &BaseProducer{
 		writer: writer,
 		cfg:    cfgInstance,
@@ -40,7 +41,7 @@ func New(logger *zap.SugaredLogger, topic string) (*BaseProducer, error) {
 	}, nil
 }
 
-func (p *BaseProducer) Send(ctx context.Context, msg *kafka.Message) error {
+func (p *BaseProducer) Send(msg *kafka.Message) error {
 	err := ProduceWithRetry(p.logger, p.cfg, func(ctx context.Context) error {
 		return p.writer.WriteMessages(ctx, *msg)
 	})

@@ -40,13 +40,16 @@ func (um *UserManager) EditEmail(ctx context.Context, userId int64, email string
 		return err
 	}
 
-	res, errm := json.Marshal(u)
-	if errm != nil {
+	res, err := json.Marshal(u)
+	if err != nil {
 		return err
 	}
-	if errR := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(res)); errR != nil {
-		um.logger.Error("error set users with id %d to cache after change email", userId)
-	}
+
+	go func() {
+		if err := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(res)); err != nil {
+			um.logger.Error("error set users with id %d to cache after change email", userId)
+		}
+	}()
 	return nil
 }
 
@@ -79,13 +82,15 @@ func (um *UserManager) ConfirmEmail(ctx context.Context, userId int64) error {
 		return err
 	}
 
-	res, errm := json.Marshal(u)
-	if errm != nil {
+	res, err := json.Marshal(u)
+	if err != nil {
 		return err
 	}
-	if errR := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(res)); errR != nil {
-		um.logger.Error("error set users with id %d to cache after change access email status", userId)
-	}
+	go func() {
+		if err = um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(res)); err != nil {
+			um.logger.Error("error set users with id %d to cache after change access email status", userId)
+		}
+	}()
 
 	return nil
 }
@@ -119,14 +124,16 @@ func (um *UserManager) EditLogin(ctx context.Context, userId int64, login string
 		return err
 	}
 
-	res, errm := json.Marshal(u)
-	if errm != nil {
+	res, err := json.Marshal(u)
+	if err != nil {
 		return err
 	}
-	if errR := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(res)); errR != nil {
-		um.logger.Error("error set users with id %d to cache after change login", userId)
-	}
+	go func() {
+		if errR := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(res)); errR != nil {
+			um.logger.Error("error set users with id %d to cache after change login", userId)
+		}
 
+	}()
 	return nil
 }
 
@@ -146,16 +153,18 @@ func (um *UserManager) GetUser(ctx context.Context, userId int64) (*models.UserP
 		}
 	}
 
-	userAggregate, errA := um.userRepository.GetUserAggregate(ctx, userId)
-	if errA != nil {
-		return nil, errA
+	userAggregate, err := um.userRepository.GetUserAggregate(ctx, userId)
+	if err != nil {
+		return nil, err
 	}
 
 	jsonAggregate, _ := json.Marshal(userAggregate)
-	errR := um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(jsonAggregate))
-	if errR != nil {
-		um.logger.Error("error set users with id %d to cache after change users", userId)
-	}
+	go func() {
+		err = um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(jsonAggregate))
+		if err != nil {
+			um.logger.Error("error set users with id %d to cache after change users", userId)
+		}
+	}()
 
 	return userAggregate, nil
 }

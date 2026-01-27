@@ -33,36 +33,35 @@ func (job *CheckUsersForUnblockJob) Run(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	defer ticker.Stop()
 
-	workerPool := 3
-	limit := 1000
-	jobQueue := make(chan *models.UserBlockStatus, limit)
-
-	var wg sync.WaitGroup
-	for i := 0; i < workerPool; i++ {
-		wg.Add(1)
-		go job.worker(ctx, &wg, jobQueue)
-	}
-
 	for {
 		select {
 		case <-ticker.C:
+			limit := 1000
 			unblockStatusEntities, err := job.unblockUserProcessor.FindForUnblock(ctx, limit)
 			if err != nil {
 				job.logger.Errorw("unblock job fetch failed", zap.Error(err))
 				continue
+			}
+			workerPool := 3
+			jobQueue := make(chan *models.UserBlockStatus, limit)
+
+			var wg sync.WaitGroup
+			for i := 0; i < workerPool; i++ {
+				wg.Add(1)
+				go job.worker(ctx, &wg, jobQueue)
 			}
 
 			for _, unblockStatus := range unblockStatusEntities {
 				select {
 				case jobQueue <- unblockStatus:
 				case <-ctx.Done():
+					close(jobQueue)
+					wg.Wait()
 					return
 				}
 			}
 
 		case <-ctx.Done():
-			close(jobQueue)
-			wg.Wait()
 			return
 		}
 	}
@@ -76,7 +75,9 @@ func (job *CheckUsersForUnblockJob) worker(ctx context.Context, wg *sync.WaitGro
 			if !ok {
 				return
 			}
-			err := job.unblockUserProcessor.Process(ctx, blockUserStatus)
+			ctxTimeout, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
+			err := job.unblockUserProcessor.Process(ctxTimeout, blockUserStatus)
+			cancel()
 			if err != nil {
 				job.logger.Errorw("unblock job processing failed", zap.Error(err))
 			}

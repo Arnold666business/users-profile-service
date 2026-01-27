@@ -10,7 +10,7 @@ type RedisConfig struct {
 	RedisPort           string `env:"REDIS_PORT"`
 	RedisPassword       string `env:"REDIS_PASSWORD"`
 	RedisUserTTL        int    `env:"REDIS_USER_TTL_HOURS"`
-	RedisIdempotencyTTL int    `env:"REDIS_USER_TTL_HOURS"`
+	RedisIdempotencyTTL int    `env:"REDIS_IDEMPOTENCY_TTL_HOURS"`
 }
 
 var (

@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -24,9 +25,19 @@ type GrpcServer struct {
 func Build(Logger *zap.SugaredLogger, serviceImpl *users.UserService) *GrpcServer {
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			authInterceptor,
 			loggingInterceptor(Logger),
+			authInterceptor,
 		),
+		grpc.MaxRecvMsgSize(4*1024*1024),
+		grpc.MaxSendMsgSize(4*1024*1024),
+		grpc.MaxConcurrentStreams(100),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle:     15 * time.Minute,
+			MaxConnectionAge:      30 * time.Minute,
+			MaxConnectionAgeGrace: 5 * time.Second,
+			Time:                  30 * time.Second,
+			Timeout:               10 * time.Second,
+		}),
 	)
 	userpb.RegisterUserProfileServiceServer(grpcServer, serviceImpl)
 	return &GrpcServer{Instance: grpcServer, Port: os.Getenv("GRPC_PORT"), Logger: Logger}

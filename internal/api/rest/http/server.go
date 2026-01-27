@@ -7,12 +7,10 @@ import (
 )
 
 func (s *Server) Start() {
-	go func() {
-		s.Logger.Debugf("starting http server on %s", s.Instance.Addr)
-		if err := s.Instance.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.Logger.Warnw("http server unexcepted error", "error", err)
-		}
-	}()
+	s.Logger.Debugf("starting http server on %s", s.Instance.Addr)
+	if err := s.Instance.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		s.Logger.Warnw("http server unexcepted error", "error", err)
+	}
 }
 
 func (s *Server) Closer(ctx context.Context) error {

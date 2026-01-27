@@ -5,16 +5,14 @@ import (
 )
 
 func (server *GrpcServer) Start() {
-	go func() {
-		lis, err := net.Listen("tcp", server.Port)
-		if err != nil {
-			server.Logger.Fatalw("failed to listen", "port", server.Port, "error", err)
-		}
-		server.Logger.Infow("grpc server listening", "port", server.Port)
-		if err := server.Instance.Serve(lis); err != nil {
-			server.Logger.Fatalw("failed to serve", "port", server.Port, "error", err)
-		}
-	}()
+	lis, err := net.Listen("tcp", server.Port)
+	if err != nil {
+		server.Logger.Fatalw("failed to listen", "port", server.Port, "error", err)
+	}
+	server.Logger.Infow("grpc server listening", "port", server.Port)
+	if err := server.Instance.Serve(lis); err != nil {
+		server.Logger.Fatalw("failed to serve", "port", server.Port, "error", err)
+	}
 }
 
 func (server *GrpcServer) Close() {

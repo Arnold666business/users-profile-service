@@ -28,10 +28,10 @@ func Build() (*zap.SugaredLogger, error) {
 
 	fileWriter := &lumberjack.Logger{
 		Filename:   cfgInstance.FileName,
-		MaxSize:    cfgInstance.MaxSize,    //будет создан новый файл
-		MaxBackups: cfgInstance.MaxBackups, //сколько старых файлов хранить
+		MaxSize:    cfgInstance.MaxSize,
+		MaxBackups: cfgInstance.MaxBackups,
 		MaxAge:     cfgInstance.MaxAge,
-		Compress:   true, //gzip compression
+		Compress:   true, //zip
 	}
 
 	fileCore := zapcore.NewCore(

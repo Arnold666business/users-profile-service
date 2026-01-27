@@ -13,7 +13,7 @@ var (
 	wrongLoginSymbols = "%$#*"
 )
 
-// "" если валиден
+// "" if valid
 func ValidateEmail(ctx context.Context, email string, userRepository *repository.User) string {
 	if strings.TrimSpace(email) == "" {
 		return "email cant be empty"
@@ -29,7 +29,7 @@ func ValidateEmail(ctx context.Context, email string, userRepository *repository
 	return ""
 }
 
-// "" если валиден
+// "" if valid
 func ValidateLogin(ctx context.Context, login string, userRepository *repository.User) string {
 	if strings.TrimSpace(login) == "" {
 		return "login cant be empty"

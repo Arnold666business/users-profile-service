@@ -20,7 +20,6 @@ var (
 	idempotencyCachePrefix = "idempotency_storage"
 )
 
-// todo: нормально настроить
 func Build(logger *zap.SugaredLogger) (*RedisProvider, error) {
 	cfg, err := NewDBConfig()
 	if err != nil {
@@ -32,11 +31,11 @@ func Build(logger *zap.SugaredLogger) (*RedisProvider, error) {
 		zap.String("redis.ulr", address))
 
 	client, err := rueidis.NewClient(rueidis.ClientOption{
-		InitAddress: []string{address},
-		Password:    cfg.RedisPassword,
-		//DisableRetry: true,
-		//DisableCache: true,
-		//ConnWriteTimeout: 10 * time.Second,
+		InitAddress:      []string{address},
+		Password:         cfg.RedisPassword,
+		DisableRetry:     true,
+		DisableCache:     true,
+		ConnWriteTimeout: 10 * time.Second,
 	})
 	if err != nil {
 		logger.Errorw("Error creating redis client", "error", err)

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "api/generation/kitchen/v1/kitchen;kitchenpb";
+
+import "google/protobuf/empty.proto";
+
+message GetBookingsRequest {
+  int64 owner_id = 1;
+}
+
+message GetBookingsResponse {
+    repeated Booking bookings = 1;
+}
+
+message Booking {
+  int64 booking_id = 1;
+  int64 kitchen_id = 2;
+}
+
+message UnPublishKitchenRequest {
+  int64 owner_id = 1;
+}
+
+service KitchenService {
+  rpc GetKitchenActiveBookingsByOwnerId(GetBookingsRequest) returns (GetBookingsResponse);
+  rpc UnPublishKitchenByOwnerId(UnPublishKitchenRequest) returns (google.protobuf.Empty);
+}

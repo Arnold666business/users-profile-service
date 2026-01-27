@@ -15,7 +15,7 @@ type DeleteUserProcessor struct {
 	ubsRepository         *repository.UserBlockStatus
 	btdRepository         *repository.BlockTypeDictionary
 	userHistoryRepository *repository.UserHistory
-	kitchenService        *KitchenService
+	kitchenService        KitchenService
 	deleteUserProducer    *DeletedUser.Producer
 	transactor            *repository.Transactor
 	redis                 *redis.RedisProvider
@@ -23,7 +23,7 @@ type DeleteUserProcessor struct {
 
 func Build(logger *zap.SugaredLogger,
 	repositories *repository.Repositories,
-	kitchenService *KitchenService,
+	kitchenService KitchenService,
 	producers *build.Producers,
 	redis *redis.RedisProvider) *DeleteUserProcessor {
 	return &DeleteUserProcessor{

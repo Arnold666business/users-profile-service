@@ -67,12 +67,13 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 		return 0, common_error.NewError(errTx.Error(), common_error.TypeInternal)
 	}
 
-	errI := processor.redis.SetIdempotencyStorage(ctx, req.IdempotencyKey, strconv.FormatInt(newUser.Id, 10))
-	if errI != nil {
-		l.Errorf("error with save to idempotency storage %s: %s", req.IdempotencyKey, errI)
-	}
+	go func() {
+		errI := processor.redis.SetIdempotencyStorage(ctx, req.IdempotencyKey, strconv.FormatInt(newUser.Id, 10))
+		if errI != nil {
+			l.Errorf("error with save to idempotency storage %s: %s", req.IdempotencyKey, errI)
+		}
+	}()
 
-	//todo: залупа
 	go func() {
 		errProducer := processor.newUserProducer.Produce(NewUser.NewUserTopicData{Id: newUser.Id, Role: req.Role})
 		if errProducer != nil {

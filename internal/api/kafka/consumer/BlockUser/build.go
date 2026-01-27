@@ -1,25 +1,30 @@
 package BlockUser
 
 import (
-	"context"
-	"encoding/json"
 	"time"
+	"users-profile-service/internal/user/block"
 
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
 
-type BlockedInfo struct {
-	Id          int64     `json:"id"`
-	UnblockData time.Time `json:"unblock_data"`
-	Forever     bool      `json:"forever_flag"`
+type BlockUser struct {
+	conn      *kafka.Reader
+	logger    *zap.SugaredLogger
+	processor *block.BlockUserProcessor
 }
 
-// todo: залупа
-func Build(logger *zap.SugaredLogger) error {
+type BlockedInfo struct {
+	UserID      int64     `json:"id"`
+	BlockTypeID int       `json:"block_type_id"`
+	Forever     bool      `json:"forever_flag"`
+	BlockAt     time.Time `json:"block_at"`
+}
+
+func Build(logger *zap.SugaredLogger, processor *block.BlockUserProcessor) (*BlockUser, error) {
 	cfg, err := NewConsumerConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	l := logger.Named("kafka.consumer").With(
 		zap.String("topic", cfg.Topic),
@@ -28,22 +33,12 @@ func Build(logger *zap.SugaredLogger) error {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: cfg.Brokers,
 		GroupID: cfg.GroupId,
+		Topic:   cfg.Topic,
 	})
 
-	for {
-		var msg kafka.Message
-		msg, err = reader.ReadMessage(context.Background())
-		if err != nil {
-			l.Errorf("Error reading message from kafka: %v", err)
-			break
-		}
-		var data BlockedInfo
-		err = json.Unmarshal(msg.Value, &data)
-		if err != nil {
-			l.Errorf("Error unmarshalling message from kafka: %v", err)
-			continue
-		}
-	}
-	reader.Close()
-	return nil
+	return &BlockUser{
+		conn:      reader,
+		logger:    l,
+		processor: processor,
+	}, nil
 }

@@ -46,5 +46,4 @@ func HandleError(w http.ResponseWriter, err error, logger *zap.SugaredLogger) {
 		GenerateError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 }

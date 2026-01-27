@@ -3,11 +3,13 @@ package app
 import (
 	"context"
 	"errors"
+	"users-profile-service/internal/api/kafka/consumer/BlockUser"
 	"users-profile-service/internal/api/rest"
 	"users-profile-service/internal/api/rest/http"
 	"users-profile-service/internal/api/rpc"
 	"users-profile-service/internal/api/rpc/users"
 	"users-profile-service/internal/external/kafka/producer/build"
+	"users-profile-service/internal/external/rpc/kitchen/v1/service"
 	"users-profile-service/internal/job"
 	"users-profile-service/internal/repository"
 	"users-profile-service/internal/repository/postgres"
@@ -36,6 +38,7 @@ type App struct {
 	unblockUserJob        *job.CheckUsersForUnblockJob
 	baseServer            *http.Server
 	grpcServer            *rpc.GrpcServer
+	blockUserConsumer     *BlockUser.BlockUser
 }
 
 func Build(closer *close.Closer, l *zap.SugaredLogger) (*App, error) {
@@ -55,21 +58,28 @@ func Build(closer *close.Closer, l *zap.SugaredLogger) (*App, error) {
 	}
 	closer.Add(redisProvider.Close)
 
-	producers, err := build.Build(l)
+	producers, err := build.Build(l, closer)
 	if err != nil {
 		return nil, errors.New("producer build failed" + err.Error())
 	}
 
-	//KitchenService
+	kitchenService, err := service.Build(l)
+	if err != nil {
+		return nil, errors.New("kitchenService build failed" + err.Error())
+	}
 
-	deleteUserProcessor := delete_user.Build(l, repos, KitchenService, producers, redisProvider)
+	deleteUserProcessor := delete_user.Build(l, repos, kitchenService, producers, redisProvider)
 	createUserProcessor := create.Build(l, repos, producers, redisProvider)
 	blockUserProcessor := block.Build(l, repos, redisProvider)
 	unblockUserProcessor := unblock.Build(l, repos, redisProvider, producers)
 
 	unblockUserJob := job.Build(l, unblockUserProcessor)
 
-	//консумеры  blockUserProcessor use
+	blockUserConsumer, err := BlockUser.Build(l, blockUserProcessor)
+	if err != nil {
+		return nil, errors.New("blockUser topic consumer build failed" + err.Error())
+	}
+	closer.Add(blockUserConsumer.StopListening())
 
 	userManagement := management.Build(l, repos, redisProvider)
 
@@ -93,6 +103,7 @@ func Build(closer *close.Closer, l *zap.SugaredLogger) (*App, error) {
 		unblockUserJob:        unblockUserJob,
 		baseServer:            baseServer,
 		grpcServer:            grpcServer,
+		blockUserConsumer:     blockUserConsumer,
 	}, nil
 }
 
@@ -100,7 +111,7 @@ func (app *App) Run(ctx context.Context) {
 	go app.baseServer.Start()
 	go app.grpcServer.Start()
 
-	//consumer
+	go app.blockUserConsumer.StartListening(ctx)
 
 	go app.unblockUserJob.Run(ctx)
 }

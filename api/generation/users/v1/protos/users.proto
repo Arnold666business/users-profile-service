@@ -8,8 +8,7 @@ message GetUserRequest {
   int64 id = 1;
 }
 
-
-message GetUserResponse {
+message GetUserResponse {   
   int64 id = 1;
   string login = 2;
   string email = 3;

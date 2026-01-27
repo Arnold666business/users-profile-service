@@ -1,7 +1,6 @@
 package NewUser
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"users-profile-service/internal/external/kafka/producer"
@@ -29,5 +28,5 @@ func Build(logger *zap.SugaredLogger) (*Producer, error) {
 
 func (p *Producer) Produce(data NewUserTopicData) error {
 	message := kafka.Message{Value: []byte(fmt.Sprintf("{id:%d, role:%d}", data.Id, data.Role))}
-	return p.BaseProducer.Send(context.Background(), &message)
+	return p.BaseProducer.Send(&message)
 }

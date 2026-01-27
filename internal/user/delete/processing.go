@@ -8,7 +8,8 @@ import (
 )
 
 type Booking struct {
-	//???asdfghj
+	BookingId int64
+	KitchenId int64
 }
 
 type KitchenService interface {
@@ -25,14 +26,15 @@ func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (in
 		return 0, err
 	}
 
-	//todo: вот эти хуйни все сделать нормально
-	if len(processor.kitchenService.GetKitchenActiveBookingsByOwnerId(ctx, user.Id)) != 0 {
-		l.Warnw("kitchen has active bookings", "users", user)
-		return 0, nil
-	}
+	ownerRole := 1
+	if user.Role == ownerRole {
+		if len(processor.kitchenService.GetKitchenActiveBookingsByOwnerId(ctx, user.Id)) != 0 {
+			l.Warnw("kitchen has active bookings", "users", user)
+			return 0, nil
+		}
 
-	//todo: вот эти хуйни все сделать нормально
-	go processor.kitchenService.UnPublishKitchenByOwerId(ctx, user.Id)
+		go processor.kitchenService.UnPublishKitchenByOwerId(ctx, user.Id)
+	}
 
 	err = processor.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
 		user.IsDeleted = true
@@ -54,11 +56,13 @@ func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (in
 		return 0, err
 	}
 
-	if errR := processor.redis.DeleteUserCache(ctx, strconv.FormatInt(id, 10)); errR != nil {
-		processor.logger.Error("error delete users with id %d to cache after delete user", id)
-	}
-	//todo: вот эти хуйни все сделать нормально
-	err = processor.deleteUserProducer.Produce(ctx, id)
+	go func() {
+		if errR := processor.redis.DeleteUserCache(ctx, strconv.FormatInt(id, 10)); errR != nil {
+			processor.logger.Error("error delete users with id %d to cache after delete user", id)
+		}
+	}()
+
+	err = processor.deleteUserProducer.Produce(id)
 	if err != nil {
 		return 0, err
 	}

@@ -1,10 +1,12 @@
 package UnBlockUser
 
 import (
+	"fmt"
 	"os"
 	"time"
 	"users-profile-service/internal/external/kafka/producer"
 
+	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
 
@@ -26,5 +28,6 @@ func Build(logger *zap.SugaredLogger) (*Producer, error) {
 }
 
 func (p *Producer) Produce(data UnblockUserTopicData) error {
-	//message := kafka.Message{}
+	message := kafka.Message{Value: []byte(fmt.Sprintf("{user_id:%d, timestamp:%s}", data.UserId, data.Timestamp))}
+	return p.BaseProducer.Send(&message)
 }

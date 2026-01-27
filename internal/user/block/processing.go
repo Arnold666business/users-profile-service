@@ -48,9 +48,11 @@ func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequ
 			return err
 		}
 
-		if errR := processor.redis.DeleteUserCache(ctx, strconv.FormatInt(userId, 10)); errR != nil {
-			processor.logger.Error("error delete users with id %d to cache after block user", userId)
-		}
+		go func() {
+			if errR := processor.redis.DeleteUserCache(ctx, strconv.FormatInt(userId, 10)); errR != nil {
+				processor.logger.Error("error delete users with id %d to cache after block user", userId)
+			}
+		}()
 
 		return nil
 	})
