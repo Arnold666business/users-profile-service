@@ -19,7 +19,7 @@ func ValidateTokenMiddleware(l *zap.SugaredLogger) func(http.Handler) http.Handl
 				return
 			}
 
-			validToken := os.Getenv("SPERMA")
+			validToken := os.Getenv("BASE_TOKEN")
 			if reqToken != validToken {
 				l.Debugw("not valid token", "header", authHeader, "path", r.URL.Path, "method", r.Method)
 				handlers.GenerateError(w, "not found x-Token", http.StatusUnauthorized)

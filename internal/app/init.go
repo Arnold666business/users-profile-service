@@ -32,7 +32,7 @@ type App struct {
 	producers             *build.Producers
 	redis                 *redis.RedisProvider
 	deleteUserProcessor   *delete_user.DeleteUserProcessor
-	creteUsersProcessor   *create.CreateUserProcessor
+	createUsersProcessor  *create.CreateUserProcessor
 	blockUsersProcessor   *block.BlockUserProcessor
 	unblockUsersProcessor *unblock.UnblockUserProcessor
 	unblockUserJob        *job.CheckUsersForUnblockJob
@@ -79,7 +79,7 @@ func Build(closer *close.Closer, l *zap.SugaredLogger) (*App, error) {
 	if err != nil {
 		return nil, errors.New("blockUser topic consumer build failed" + err.Error())
 	}
-	closer.Add(blockUserConsumer.StopListening())
+	closer.Add(blockUserConsumer.StopListening)
 
 	userManagement := management.Build(l, repos, redisProvider)
 
@@ -97,7 +97,7 @@ func Build(closer *close.Closer, l *zap.SugaredLogger) (*App, error) {
 		producers:             producers,
 		redis:                 redisProvider,
 		deleteUserProcessor:   deleteUserProcessor,
-		creteUsersProcessor:   createUserProcessor,
+		createUsersProcessor:  createUserProcessor,
 		blockUsersProcessor:   blockUserProcessor,
 		unblockUsersProcessor: unblockUserProcessor,
 		unblockUserJob:        unblockUserJob,

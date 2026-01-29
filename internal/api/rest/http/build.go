@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
@@ -20,10 +19,15 @@ type Server struct {
 
 func Build(logger *zap.SugaredLogger, router *chi.Mux) *Server {
 	l := logger.Named("http.server")
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	return &Server{
 		Router: router,
 		Instance: &http.Server{
-			Addr:    fmt.Sprintf(":%d", os.Getenv("SERVER_PORT")),
+			Addr:    ":" + port,
 			Handler: router,
 		},
 		Logger: l,
