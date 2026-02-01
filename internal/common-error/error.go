@@ -5,10 +5,11 @@ import "fmt"
 type ErrorType string
 
 const (
-	TypeValidation   ErrorType = "validation"
-	TypeNotFound     ErrorType = "not_found"
-	TypeUnauthorized ErrorType = "unauthorized"
-	TypeInternal     ErrorType = "internal"
+	TypeValidation        ErrorType = "validation"
+	TypeNotFound          ErrorType = "not_found"
+	TypeUnauthorized      ErrorType = "unauthorized"
+	TypeInternal          ErrorType = "internal"
+	EmailAlreadyConfirmed ErrorType = "email_already_confirmed"
 )
 
 type ErrorDefinition struct {

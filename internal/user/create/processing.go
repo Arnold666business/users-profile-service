@@ -56,7 +56,7 @@ func (processor *CreateUserProcessor) Process(ctx context.Context, req CreateReq
 			return err
 		}
 
-		_, err = processor.userHistoryRepository.Save(ctx, newUser, models.CREATE)
+		_, err = processor.userHistoryRepository.Save(ctx, *newUser, models.CREATE)
 		if err != nil {
 			l.Errorw("error adding user_history", "userId", userId, "err", err)
 			return err

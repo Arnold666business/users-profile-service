@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	common_error "users-profile-service/internal/common-error"
 	"users-profile-service/internal/models"
 	"users-profile-service/internal/user"
 )
@@ -15,6 +16,7 @@ func (um *UserManager) EditEmail(ctx context.Context, userId int64, email string
 	if err != nil {
 		return err
 	}
+	forHistory := *u
 
 	if res := user.ValidateEmail(ctx, email, um.userRepository); res != "" {
 		return fmt.Errorf(res)
@@ -29,7 +31,7 @@ func (um *UserManager) EditEmail(ctx context.Context, userId int64, email string
 			return err
 		}
 
-		_, err = um.userHistoryRepository.Save(ctx, u, models.UPDATE)
+		_, err = um.userHistoryRepository.Save(ctx, forHistory, models.UPDATE)
 		if err != nil {
 			um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
 			return err
@@ -58,9 +60,14 @@ func (um *UserManager) ConfirmEmail(ctx context.Context, userId int64) error {
 	if err != nil {
 		return err
 	}
+	forHistory := *u
 
 	if u.Email == "" {
 		return errors.New("no users email found")
+	}
+
+	if u.AccessEmailStatus == true {
+		return common_error.NewError("confirmed", common_error.EmailAlreadyConfirmed)
 	}
 
 	err = um.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
@@ -71,7 +78,7 @@ func (um *UserManager) ConfirmEmail(ctx context.Context, userId int64) error {
 			return err
 		}
 
-		_, err = um.userHistoryRepository.Save(ctx, u, models.UPDATE)
+		_, err = um.userHistoryRepository.Save(ctx, forHistory, models.UPDATE)
 		if err != nil {
 			um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
 			return err
@@ -100,6 +107,7 @@ func (um *UserManager) EditLogin(ctx context.Context, userId int64, login string
 	if err != nil {
 		return err
 	}
+	forHistory := *u
 
 	if res := user.ValidateLogin(ctx, login, um.userRepository); res != "" {
 		return fmt.Errorf(res)
@@ -113,7 +121,7 @@ func (um *UserManager) EditLogin(ctx context.Context, userId int64, login string
 			return err
 		}
 
-		_, err = um.userHistoryRepository.Save(ctx, u, models.UPDATE)
+		_, err = um.userHistoryRepository.Save(ctx, forHistory, models.UPDATE)
 		if err != nil {
 			um.logger.Errorw("error adding user_history", "userId", userId, "err", err)
 			return err
@@ -162,7 +170,7 @@ func (um *UserManager) GetUser(ctx context.Context, userId int64) (*models.UserP
 	go func() {
 		err = um.redis.SetUserCache(ctx, strconv.FormatInt(userId, 10), string(jsonAggregate))
 		if err != nil {
-			um.logger.Error("error set users with id %d to cache after change users", userId)
+			um.logger.Error("error set users with id %d to cache after change users", userId, "err", err.Error())
 		}
 	}()
 

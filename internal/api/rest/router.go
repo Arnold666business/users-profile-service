@@ -22,8 +22,8 @@ func BuildRouter(logger *zap.SugaredLogger,
 		r.Use(middleware.ValidateTokenMiddleware(logger))
 
 		r.Route("/users", func(r chi.Router) {
-			r.Post("", handlers.CreateUserHandler(logger, createProcessor))
-			r.Route("/{userID}", func(r chi.Router) {
+			r.Post("/", handlers.CreateUserHandler(logger, createProcessor))
+			r.Route("/{user_id}", func(r chi.Router) {
 				r.Put("/verify-email", handlers.VerifyEmailHandler(logger, userManager))
 				r.Post("/email", handlers.ChangeEmailHandler(logger, userManager))
 				r.Post("/login", handlers.ChangeLoginHandler(logger, userManager))

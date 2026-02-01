@@ -47,7 +47,9 @@ func Build(closer *close.Closer, l *zap.SugaredLogger) (*App, error) {
 	if err != nil {
 		return nil, errors.New("postgres init failed" + err.Error())
 	}
-	closer.Add(db)
+	closer.Add(func() {
+		db.Close()
+	})
 
 	repos := repository.Build(db)
 
@@ -79,7 +81,9 @@ func Build(closer *close.Closer, l *zap.SugaredLogger) (*App, error) {
 	if err != nil {
 		return nil, errors.New("blockUser topic consumer build failed" + err.Error())
 	}
-	closer.Add(blockUserConsumer.StopListening)
+	closer.Add(func() error {
+		return blockUserConsumer.StopListening()
+	})
 
 	userManagement := management.Build(l, repos, redisProvider)
 

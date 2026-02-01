@@ -21,6 +21,7 @@ func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequ
 		l.Errorw("error getting users", "userId", userId, "err", err)
 		return err
 	}
+	forHistory := *user
 
 	btd, err := processor.btdRepository.GetByBlockType(ctx, data.BlockTypeId)
 	if err != nil {
@@ -42,7 +43,7 @@ func (processor *BlockUserProcessor) Process(ctx context.Context, data BlockRequ
 			return err
 		}
 
-		_, err = processor.userHistoryRepository.Save(ctx, user, models.BLOCKED)
+		_, err = processor.userHistoryRepository.Save(ctx, forHistory, models.BLOCKED)
 		if err != nil {
 			l.Errorw("error adding user_history", "userId", userId, "err", err)
 			return err

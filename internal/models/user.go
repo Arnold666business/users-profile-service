@@ -9,7 +9,7 @@ type User struct {
 	AccessEmailStatus bool
 	Role              int
 	IsDeleted         bool
-	DeletedAt         time.Time
+	DeletedAt         *time.Time
 }
 
 type UserProfile struct {
@@ -19,10 +19,10 @@ type UserProfile struct {
 	EmailAccess      bool
 	Role             int
 	IsDeleted        bool
-	DeletedAt        time.Time
-	BlockTypeId      int
-	ForeverFlag      bool
-	UnBlockDate      time.Time
-	BlockTitle       string
-	BlockDescription string
+	DeletedAt        *time.Time
+	BlockTypeId      *int
+	ForeverFlag      *bool
+	UnBlockDate      *time.Time
+	BlockTitle       *string
+	BlockDescription *string
 }

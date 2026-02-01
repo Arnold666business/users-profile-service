@@ -30,6 +30,11 @@ func (c *Closer) Add(closers ...interface{}) {
 				f()
 				return nil
 			})
+		case func() error:
+			c.closers = append(c.closers, func(ctx context.Context) error {
+				return f()
+			})
+
 		default:
 			log.Printf("unsupported close type: %T", closer)
 		}

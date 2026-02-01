@@ -14,7 +14,7 @@ type Booking struct {
 
 type KitchenService interface {
 	GetKitchenActiveBookingsByOwnerId(ctx context.Context, id int64) []Booking
-	UnPublishKitchenByOwerId(ctx context.Context, id int64)
+	UnPublishKitchenByOwerId(ctx context.Context, id int64) error
 }
 
 func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (int64, error) {
@@ -25,7 +25,7 @@ func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (in
 		l.Errorw("error getting users", "userId", id, "err", err)
 		return 0, err
 	}
-
+	forHistory := *user
 	ownerRole := 1
 	if user.Role == ownerRole {
 		if len(processor.kitchenService.GetKitchenActiveBookingsByOwnerId(ctx, user.Id)) != 0 {
@@ -33,19 +33,24 @@ func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (in
 			return 0, nil
 		}
 
-		go processor.kitchenService.UnPublishKitchenByOwerId(ctx, user.Id)
+		err = processor.kitchenService.UnPublishKitchenByOwerId(ctx, user.Id)
+
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	err = processor.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
 		user.IsDeleted = true
-		user.DeletedAt = time.Now()
+		now := time.Now()
+		user.DeletedAt = &now
 		err = processor.userRepository.Update(ctx, user)
 		if err != nil {
 			l.Errorw("error updating users", "users", user)
 			return err
 		}
 
-		_, err = processor.userHistoryRepository.Save(ctx, user, models.DELETE)
+		_, err = processor.userHistoryRepository.Save(ctx, forHistory, models.DELETE)
 		if err != nil {
 			l.Errorw("error adding user_history", "userId", id, "err", err)
 			return err
@@ -62,10 +67,12 @@ func (processor *DeleteUserProcessor) Process(ctx context.Context, id int64) (in
 		}
 	}()
 
-	err = processor.deleteUserProducer.Produce(id)
-	if err != nil {
-		return 0, err
-	}
+	go func() {
+		err = processor.deleteUserProducer.Produce(id)
+		if err != nil {
+			processor.logger.Errorw("error deleting user", "userId", id, "err", err)
+		}
+	}()
 
 	return id, nil
 }

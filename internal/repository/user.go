@@ -42,17 +42,28 @@ func (user *User) getBy(ctx context.Context, field Field, value interface{}) (*m
 		fieldName = "email"
 	case Login:
 		fieldName = "login"
+	case ACCESS_EMAIL_STATUS:
+		fieldName = "access_email_status"
 	default:
 		return nil, fmt.Errorf("unknown field %v", field)
 	}
 
 	query := fmt.Sprintf(
-		`
-		SELECT id, login, email, access_email_status, role, is_deleted, delete_at FROM users_profile.users
+		`	
+		SELECT 
+			id, 
+			login, 
+			email, 
+			access_email_status, 
+			role, 
+			is_deleted, 
+			delete_at
+		FROM users_profile.users
 		WHERE %s = $1;
 	`, fieldName)
 
 	var u models.User
+
 	err := db.QueryRow(ctx, query, value).Scan(
 		&u.Id,
 		&u.Login,
@@ -65,7 +76,12 @@ func (user *User) getBy(ctx context.Context, field Field, value interface{}) (*m
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, NotFoundUserError
 	}
+
 	return &u, err
+}
+
+func (user *User) GetByAccessEmailStatus(ctx context.Context, status string) (*models.User, error) {
+	return user.getBy(ctx, ACCESS_EMAIL_STATUS, status)
 }
 
 func (user *User) GetById(ctx context.Context, id int64) (*models.User, error) {
@@ -83,7 +99,7 @@ func (user *User) GetByLogin(ctx context.Context, login string) (*models.User, e
 func (user *User) Save(ctx context.Context, userToCreate *models.User) (int64, error) {
 	db := GetQuerier(ctx, user.db)
 	query := `
-		INSERT INTO users_profile.users (login, email, access_email_status, role, is_deleted, delete_at) VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO users_profile.users (login, email, access_email_status, role, is_deleted) VALUES ($1, $2, $3, $4, $5)
 		 RETURNING id;
 	`
 	err := db.QueryRow(ctx, query,
@@ -92,7 +108,6 @@ func (user *User) Save(ctx context.Context, userToCreate *models.User) (int64, e
 		userToCreate.AccessEmailStatus,
 		userToCreate.Role,
 		userToCreate.IsDeleted,
-		userToCreate.DeletedAt,
 	).Scan(&userToCreate.Id)
 	if err != nil {
 		return 0, err
@@ -119,7 +134,7 @@ func (user *User) updateField(ctx context.Context, id int64, setField Field, set
 		return fmt.Errorf("unknown set field %v", setField)
 	}
 
-	query := "UPDATE users_profile.users SET " + setFieldName + " = $1, updated_at = NOW() WHERE id = $2"
+	query := "UPDATE users_profile.users SET " + setFieldName + " = $1 	 WHERE id = $2"
 
 	_, err := db.Exec(ctx, query, setValue, id)
 	if err != nil {
@@ -149,9 +164,8 @@ func (user *User) Update(ctx context.Context, u *models.User) error {
 		                                email=$2, 
 		                                access_email_status=$3 ,
 		                                role=$4 ,
-		                            is_deleted=$5 ,
-		                            deleted_at=$6 
-		                            WHERE id=$7;
+		                            is_deleted=$5 	
+		                            WHERE id=$6;
 	`
 
 	_, err := db.Exec(ctx, query,
@@ -160,7 +174,6 @@ func (user *User) Update(ctx context.Context, u *models.User) error {
 		u.AccessEmailStatus,
 		u.Role,
 		u.IsDeleted,
-		u.DeletedAt,
 		u.Id,
 	)
 	if err != nil {
@@ -169,21 +182,42 @@ func (user *User) Update(ctx context.Context, u *models.User) error {
 	return nil
 }
 
-// ПОТЕСТИТЬ ЭТО
 func (user *User) GetUserAggregate(ctx context.Context, id int64) (*models.UserProfile, error) {
 	db := GetQuerier(ctx, user.db)
 	query := `
-		SELECT u.id, u.login, u.email, u.access_email_status, u.role, u.is_deleted, u.delete_at, 
-            COALESCE(btd.type_id, 0) as block_type_id, 
-            COALESCE(ubs.forever_flag, false) as forever_flag, 
-            COALESCE(ubs.unblock_date, '') as unblock_date,
-            COALESCE(btd.title, '') as block_title, 
-            COALESCE(btd.description, '') as block_description
-		FROM users_profile.users AS u
-		LEFT JOIN users_profile.users_block_status AS ubs ON ubs.user_id = u.id 
-		LEFT JOIN users_profile.block_type_dictionary AS btd ON ubs.block_type_id = btd.type_id
-		WHERE u.id = $1 AND ubs.is_active = true;
-	`
+        SELECT 
+            u.id, 
+            u.login, 
+            u.email, 
+            u.access_email_status, 
+            u.role, 
+            u.is_deleted, 
+            u.delete_at,
+            CASE 
+                WHEN ubs.is_active = true THEN btd.type_id
+                ELSE NULL 
+            END as block_type_id,
+            CASE 
+                WHEN ubs.is_active = true THEN ubs.forever_flag
+                ELSE NULL 
+            END as block_forever_flag,
+            CASE 
+                WHEN ubs.is_active = true THEN ubs.unblock_date
+                ELSE NULL 
+            END as unblock_date,
+            CASE 
+                WHEN ubs.is_active = true THEN btd.title
+                ELSE NULL 
+            END as block_title,
+            CASE 
+                WHEN ubs.is_active = true THEN btd.description
+                ELSE NULL 
+            END as block_description
+        FROM users_profile.users AS u
+        LEFT JOIN users_profile.users_block_status AS ubs ON ubs.user_id = u.id
+        LEFT JOIN users_profile.block_type_dictionary AS btd ON ubs.block_type_id = btd.type_id
+        WHERE u.id = $1;
+    `
 	var aggregate models.UserProfile
 	err := db.QueryRow(ctx, query, id).Scan(
 		&aggregate.Id,

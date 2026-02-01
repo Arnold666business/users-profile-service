@@ -17,13 +17,15 @@ func (g *GrpcKitchenClient) GetKitchenActiveBookingsByOwnerId(ctx context.Contex
 	return bookingsMapper(response)
 }
 
-func (g *GrpcKitchenClient) UnPublishKitchenByOwerId(ctx context.Context, id int64) {
+// todo
+func (g *GrpcKitchenClient) UnPublishKitchenByOwerId(ctx context.Context, id int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	g.client.UnPublishKitchenByOwnerId(ctx, &kitchenpb.UnPublishKitchenRequest{
 		OwnerId: id,
 	})
+	return nil
 }
 
 func bookingsMapper(req *kitchenpb.GetBookingsResponse) []delete.Booking {

@@ -25,7 +25,6 @@ func Build(logger *zap.SugaredLogger) (*RedisProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	address := cfg.RedisHost + ":" + cfg.RedisPort
 	logger.Named("redis.client.connection").With(
 		zap.String("redis.ulr", address))

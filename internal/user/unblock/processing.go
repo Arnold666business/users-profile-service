@@ -23,7 +23,7 @@ func (processor *UnblockUserProcessor) Process(ctx context.Context, unblockUserS
 			if err != nil {
 				return err
 			}
-			_, err = processor.userHistoryRepository.Save(ctx, user, models.UNBLOCKED)
+			_, err = processor.userHistoryRepository.Save(ctx, *user, models.UNBLOCKED)
 			if err != nil {
 				return err
 			}

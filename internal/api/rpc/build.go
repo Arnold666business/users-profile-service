@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 	userpb "users-profile-service/api/generation/users/v1/service"
@@ -83,7 +84,7 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 		return nil, status.Errorf(codes.Unauthenticated, "x-Token is not provided")
 	}
 
-	xToken := md["x-Token"]
+	xToken := md["x-token"]
 	if len(xToken) == 0 {
 		return nil, status.Errorf(codes.Unauthenticated, "x-Token is not provided")
 	}
@@ -96,5 +97,6 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 }
 
 func validateXToken(token string) bool {
+	fmt.Println(os.Getenv("HTTP2_TOKEN"))
 	return os.Getenv("HTTP2_TOKEN") == token
 }

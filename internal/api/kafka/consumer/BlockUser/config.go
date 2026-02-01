@@ -19,8 +19,8 @@ var (
 func NewConsumerConfig() (*ConsumerConfig, error) {
 	var err error
 	once.Do(func() {
-		cfgInstance := &ConsumerConfig{}
-		err = config.Load(cfgInstance)
+		cgfInstance = &ConsumerConfig{}
+		err = config.Load(cgfInstance)
 	})
 	return cgfInstance, err
 }

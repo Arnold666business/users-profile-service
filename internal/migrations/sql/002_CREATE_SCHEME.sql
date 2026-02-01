@@ -1,1 +1,1 @@
-CREATE SCHEME IF NOT EXISTS users_profile;
+CREATE SCHEMA IF NOT EXISTS users_profile;

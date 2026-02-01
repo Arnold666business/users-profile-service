@@ -41,6 +41,8 @@ func HandleError(w http.ResponseWriter, err error, logger *zap.SugaredLogger) {
 	case common_error.TypeValidation:
 		GenerateError(w, err.Error(), http.StatusBadRequest)
 		return
+	case common_error.EmailAlreadyConfirmed:
+		return
 	default:
 		logger.Error("Unknown error type", zap.Error(err))
 		GenerateError(w, err.Error(), http.StatusInternalServerError)

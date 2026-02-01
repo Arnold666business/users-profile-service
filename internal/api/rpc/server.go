@@ -5,7 +5,7 @@ import (
 )
 
 func (server *GrpcServer) Start() {
-	lis, err := net.Listen("tcp", server.Port)
+	lis, err := net.Listen("tcp", ":"+server.Port)
 	if err != nil {
 		server.Logger.Fatalw("failed to listen", "port", server.Port, "error", err)
 	}

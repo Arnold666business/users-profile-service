@@ -45,6 +45,28 @@ func (u *UserService) GetUserById(ctx context.Context, in *service.GetUserReques
 }
 
 func mapUserAggregateToProto(u *models.UserProfile) *service.GetUserResponse {
+	var deletedAt, unblockDate *timestamppb.Timestamp
+	if u.DeletedAt != nil {
+		deletedAt = timestamppb.New(*u.DeletedAt)
+	}
+	if u.UnBlockDate != nil {
+		unblockDate = timestamppb.New(*u.UnBlockDate)
+	}
+	var blockTypeId int32
+	if u.BlockTypeId != nil {
+		blockTypeId = int32(*u.BlockTypeId)
+	}
+	var foreverFlag bool
+	if u.ForeverFlag != nil {
+		foreverFlag = *u.ForeverFlag
+	}
+	var title, decs string
+	if u.BlockTitle != nil {
+		title = *u.BlockTitle
+	}
+	if u.BlockDescription != nil {
+		decs = *u.BlockDescription
+	}
 	return &service.GetUserResponse{
 		Id:               u.Id,
 		Login:            u.Login,
@@ -52,11 +74,11 @@ func mapUserAggregateToProto(u *models.UserProfile) *service.GetUserResponse {
 		EmailAccess:      u.EmailAccess,
 		Role:             int32(u.Role),
 		IsDeleted:        u.IsDeleted,
-		DeletedAt:        timestamppb.New(u.DeletedAt),
-		BlockTypeId:      int32(u.BlockTypeId),
-		ForeverFlag:      u.ForeverFlag,
-		UnblockDate:      timestamppb.New(u.UnBlockDate),
-		BlockTitle:       u.BlockTitle,
-		BlockDescription: u.BlockDescription,
+		DeletedAt:        deletedAt,
+		BlockTypeId:      blockTypeId,
+		ForeverFlag:      foreverFlag,
+		UnblockDate:      unblockDate,
+		BlockTitle:       title,
+		BlockDescription: decs,
 	}
 }
